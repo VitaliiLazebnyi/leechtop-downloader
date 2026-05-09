@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# typed: true
+
+require_relative "../lib/leechtop_downloader"
+
+LeechtopDownloader::CLI.start(ARGV)

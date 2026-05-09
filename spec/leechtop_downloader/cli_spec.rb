@@ -1,0 +1,75 @@
+# typed: false
+# frozen_string_literal: true
+
+require "spec_helper"
+
+RSpec.describe LeechtopDownloader::CLI do
+  let(:cli) { described_class.new }
+
+  describe ".exit_on_failure?" do
+    it "returns true to ensure Thor exits with an error status on failure" do
+      expect(described_class.exit_on_failure?).to be(true)
+    end
+  end
+
+  describe "#download" do
+    let(:url) { "https://leechtop.com/example.bin" }
+    let(:io) { StringIO.new("testdata") }
+    let(:bytes) { 8 }
+
+    before do
+      # Provide a stub for IO so we can attach an original_filename method
+      io.define_singleton_method(:original_filename) do
+        "example.bin"
+      end
+      allow(LeechtopDownloader::Client).to receive(:download).with(url).and_return(io)
+      allow(LeechtopDownloader::FileManager).to receive(:save_stream).and_return(bytes)
+    end
+
+    it "LT-REQ-001: Exits with error if no URLs are provided" do
+      expect do
+        cli.download
+      end.to output(/Error: You must provide at least one URL/).to_stdout.and raise_error(SystemExit)
+
+      begin
+        cli.download
+      rescue SystemExit => e
+        expect(e.status).to eq(1)
+      end
+    end
+
+    it "LT-REQ-002: Downloads and saves a provided URL" do
+      expect do
+        cli.download(url)
+      end.to output(/Successfully downloaded example\.bin \(8 bytes\)/).to_stdout
+
+      expect(LeechtopDownloader::Client).to have_received(:download).with(url)
+      expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(io, "example.bin")
+    end
+
+    it "falls back to UTC timestamp based filename if original_filename is absent" do
+      # Standard StringIO doesn't have original_filename unless stubbed
+      raw_io = StringIO.new("testdata")
+      allow(LeechtopDownloader::Client).to receive(:download).with(url).and_return(raw_io)
+
+      now = Time.utc(2026, 1, 1, 12, 0, 0)
+      allow(Time).to receive(:now).and_return(now)
+      expected_filename = "leechtop_#{now.to_i}.bin"
+
+      expect do
+        cli.download(url)
+      end.to output(/Successfully downloaded #{expected_filename} \(8 bytes\)/).to_stdout
+
+      expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(raw_io, expected_filename)
+    end
+
+    it "handles download errors gracefully" do
+      error = LeechtopDownloader::Client::DownloadError.new("Mock failure")
+      allow(LeechtopDownloader::Client).to receive(:download).with(url).and_raise(error)
+
+      expect do
+        cli.download(url)
+      end.to output(/Error downloading #{Regexp.escape(url)}: Mock failure/).to_stdout
+    end
+  end
+end

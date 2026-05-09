@@ -1,0 +1,121 @@
+# typed: false
+# frozen_string_literal: true
+
+require "spec_helper"
+
+RSpec.describe LeechtopDownloader::Client do
+  let(:url) { "https://leechtop.com/test.bin" }
+  let(:direct_url) { "https://actual.link/file.rar" }
+  let(:mock_conn) { instance_double(Faraday::Connection) }
+
+  before do
+    allow(Faraday).to receive(:new).and_return(mock_conn)
+  end
+
+  describe ".download" do
+    before do
+      allow(described_class).to receive(:extract_direct_url).with(url).and_return(direct_url)
+    end
+
+    it "LT-REQ-002: successfully downloads from a given URL after extracting direct link" do
+      mock_io = StringIO.new("data")
+      allow(Down).to receive(:download).with(direct_url).and_return(mock_io)
+
+      result = described_class.download(url)
+      expect(result).to eq(mock_io)
+    end
+
+    it "raises a DownloadError when the file is not found (404)" do
+      allow(Down).to receive(:download).with(direct_url).and_raise(Down::NotFound.new("404 Not Found"))
+
+      expect do
+        described_class.download(url)
+      end.to raise_error(LeechtopDownloader::Client::DownloadError, /The file could not be found on the host server/)
+    end
+
+    it "raises a DownloadError when the server rejects the download" do
+      allow(Down).to receive(:download).with(direct_url).and_raise(Down::ServerError.new("500 Internal Server Error"))
+
+      expect do
+        described_class.download(url)
+      end.to raise_error(LeechtopDownloader::Client::DownloadError, /The host server rejected the download/)
+    end
+
+    it "raises a DownloadError for general extraction or network failures" do
+      allow(Down).to receive(:download).with(direct_url).and_raise(StandardError.new("Network failure"))
+
+      expect do
+        described_class.download(url)
+      end.to raise_error(LeechtopDownloader::Client::DownloadError, /Network or extraction failure: Network failure/)
+    end
+  end
+
+  describe ".extract_direct_url" do
+    let(:html) do
+      <<~HTML
+        <html>
+          <body>
+            <a class="go-download-direct" data-p="123" data-mb="456">Download</a>
+            <script>var zing = {"nonce":"abcde"};</script>
+          </body>
+        </html>
+      HTML
+    end
+
+    it "extracts the tokens and fetches the direct url via AJAX" do
+      get_response = instance_double(Faraday::Response, status: 200, body: html)
+      allow(mock_conn).to receive(:get).with(url).and_return(get_response)
+
+      post_response = instance_double(Faraday::Response, status: 200, body: '{"mes":"https://actual.link/file.rar"}')
+      allow(mock_conn).to receive(:post).with("https://leechtop.com/wp-admin/admin-ajax.php",
+                                              anything).and_return(post_response)
+
+      result = described_class.extract_direct_url(url)
+      expect(result).to eq("https://actual.link/file.rar")
+    end
+
+    it "raises an error if the initial page load fails" do
+      get_response = instance_double(Faraday::Response, status: 500)
+      allow(mock_conn).to receive(:get).with(url).and_return(get_response)
+
+      expect { described_class.extract_direct_url(url) }.to raise_error(/Failed to load page/)
+    end
+
+    it "raises an error if the download button is missing" do
+      get_response = instance_double(Faraday::Response, status: 200, body: "<html></html>")
+      allow(mock_conn).to receive(:get).with(url).and_return(get_response)
+
+      expect { described_class.extract_direct_url(url) }.to raise_error(/Could not find download button/)
+    end
+
+    it "raises an error if the nonce is missing" do
+      bad_html = '<html><a class="go-download-direct" data-p="1" data-mb="2"></a></html>'
+      get_response = instance_double(Faraday::Response, status: 200, body: bad_html)
+      allow(mock_conn).to receive(:get).with(url).and_return(get_response)
+
+      expect { described_class.extract_direct_url(url) }.to raise_error(/Could not extract nonce/)
+    end
+
+    it "raises an error if the AJAX request fails" do
+      get_response = instance_double(Faraday::Response, status: 200, body: html)
+      allow(mock_conn).to receive(:get).with(url).and_return(get_response)
+
+      post_response = instance_double(Faraday::Response, status: 500)
+      allow(mock_conn).to receive(:post).with("https://leechtop.com/wp-admin/admin-ajax.php",
+                                              anything).and_return(post_response)
+
+      expect { described_class.extract_direct_url(url) }.to raise_error(/AJAX request failed/)
+    end
+
+    it "raises an error if the server rejects the download" do
+      get_response = instance_double(Faraday::Response, status: 200, body: html)
+      allow(mock_conn).to receive(:get).with(url).and_return(get_response)
+
+      post_response = instance_double(Faraday::Response, status: 200, body: '{"mes":"no"}')
+      allow(mock_conn).to receive(:post).with("https://leechtop.com/wp-admin/admin-ajax.php",
+                                              anything).and_return(post_response)
+
+      expect { described_class.extract_direct_url(url) }.to raise_error(/Server rejected download request/)
+    end
+  end
+end

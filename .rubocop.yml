@@ -1,0 +1,33 @@
+require:
+  - rubocop-rspec
+  - rubocop-sorbet
+
+AllCops:
+  TargetRubyVersion: 4.0
+  NewCops: enable
+  Exclude:
+    - 'bin/**/*'
+    - 'sorbet/**/*'
+    - 'vendor/**/*'
+
+# Ban inline disable comments
+Style/DisableCopsWithinSourceCodeDirective:
+  Enabled: true
+
+# Keep standard styles
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+
+# Justification: Testing CLI and IO state often requires multiple assertions per context.
+RSpec/MultipleExpectations:
+  Enabled: false
+RSpec/ExampleLength:
+  Enabled: false
