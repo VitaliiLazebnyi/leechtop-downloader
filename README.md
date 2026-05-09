@@ -38,6 +38,22 @@ bundle exec srb tc
 
 ## Usage
 
+The CLI can download files from direct `leechtop.com` links or automatically extract and download multiple links from any generic HTML webpage. All downloads are saved in the `downloads/` directory.
+
+### Direct Download
+Provide a direct Leechtop URL:
 ```bash
-bundle exec bin/leechtop download "https://leechtop.com/example"
+bundle exec bin/leechtop download "https://leechtop.com/example1"
+```
+
+### Batch Download via HTML Parsing
+Provide the URL of an HTML page (like a manga chapter index) containing `leechtop.com` links. The tool will parse the page, extract all valid links, and download them sequentially:
+```bash
+bundle exec bin/leechtop download "https://dl-raw.ac/example-manga-page/"
+```
+
+### Multiple URLs
+You can pass any combination of direct URLs or generic HTML pages at once:
+```bash
+bundle exec bin/leechtop download "https://leechtop.com/example1" "https://dl-raw.ac/example-page/"
 ```

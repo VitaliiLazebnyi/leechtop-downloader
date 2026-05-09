@@ -22,11 +22,32 @@ module LeechtopDownloader
       end
 
       urls.each do |url|
-        download_single(url)
+        process_url(url)
       end
     end
 
     private
+
+    sig { params(url: String).void }
+    def process_url(url)
+      if url.match?(%r{^https?://(?:www\.)?leechtop\.com/})
+        download_single(url)
+      else
+        extract_and_download_links(url)
+      end
+    end
+
+    sig { params(url: String).void }
+    def extract_and_download_links(url)
+      puts "Fetching links from: #{url}"
+      links = Client.extract_page_links(url)
+      if links.empty?
+        puts "No leechtop.com links found on #{url}"
+      else
+        puts "Found #{links.size} leechtop.com link(s). Downloading..."
+        links.each { |link| download_single(link) }
+      end
+    end
 
     sig { params(url: String).void }
     def download_single(url)

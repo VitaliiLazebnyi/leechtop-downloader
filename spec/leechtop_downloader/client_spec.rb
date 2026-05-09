@@ -118,4 +118,42 @@ RSpec.describe LeechtopDownloader::Client do
       expect { described_class.extract_direct_url(url) }.to raise_error(/Server rejected download request/)
     end
   end
+
+  describe ".extract_page_links" do
+    let(:page_url) { "https://example.com/some_page" }
+
+    it "extracts all leechtop.com links from a given HTML page and ignores tags without href" do
+      html = <<~HTML
+        <html>
+          <body>
+            <a href="https://leechtop.com/file1/">File 1</a>
+            <a href="http://leechtop.com/file2/">File 2</a>
+            <a href="https://other.com/file3/">Other</a>
+            <a>No href</a>
+          </body>
+        </html>
+      HTML
+      get_response = instance_double(Faraday::Response, status: 200, body: html)
+      allow(mock_conn).to receive(:get).with(page_url).and_return(get_response)
+
+      result = described_class.extract_page_links(page_url)
+      expect(result).to eq(["https://leechtop.com/file1/", "http://leechtop.com/file2/"])
+    end
+
+    it "returns an empty array if no links are found" do
+      html = "<html><body><a href='https://other.com'>Other</a></body></html>"
+      get_response = instance_double(Faraday::Response, status: 200, body: html)
+      allow(mock_conn).to receive(:get).with(page_url).and_return(get_response)
+
+      result = described_class.extract_page_links(page_url)
+      expect(result).to eq([])
+    end
+
+    it "raises an error if the page fails to load" do
+      get_response = instance_double(Faraday::Response, status: 404)
+      allow(mock_conn).to receive(:get).with(page_url).and_return(get_response)
+
+      expect { described_class.extract_page_links(page_url) }.to raise_error(/Failed to load page: HTTP 404/)
+    end
+  end
 end

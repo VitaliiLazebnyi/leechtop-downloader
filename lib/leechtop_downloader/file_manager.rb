@@ -9,13 +9,13 @@ module LeechtopDownloader
   class FileManager
     extend T::Sig
 
-    # LT-REQ-003, LT-REQ-004, LT-REQ-005, LT-REQ-006
-    sig { params(io: T.any(IO, StringIO, Tempfile), filename: String).returns([Integer, String]) }
-    def self.save_stream(io, filename)
+    # LT-REQ-003, LT-REQ-004, LT-REQ-005, LT-REQ-006, BUG-LT-001
+    sig { params(io: T.any(IO, StringIO, Tempfile), filename: String, destination: String).returns([Integer, String]) }
+    def self.save_stream(io, filename, destination = "downloads")
       # Enforcement of UTC and Metric standards
-      FileUtils.mkdir_p("downloads")
-      resolved_filename = resolve_filename(filename, "downloads")
-      filepath = File.join("downloads", resolved_filename)
+      FileUtils.mkdir_p(destination)
+      resolved_filename = resolve_filename(filename, destination)
+      filepath = File.join(destination, resolved_filename)
 
       bytes_written = write_stream(io, filepath)
 

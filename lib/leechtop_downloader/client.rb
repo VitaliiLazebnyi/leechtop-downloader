@@ -79,5 +79,16 @@ module LeechtopDownloader
 
       direct_link
     end
+
+    sig { params(url: String).returns(T::Array[String]) }
+    def self.extract_page_links(url)
+      html = fetch_html(url)
+      document = Nokogiri::HTML(html)
+
+      document.css("a").filter_map do |a|
+        href = a["href"]
+        href if href&.match?(%r{^https?://(?:www\.)?leechtop\.com/})
+      end
+    end
   end
 end

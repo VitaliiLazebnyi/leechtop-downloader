@@ -71,5 +71,45 @@ RSpec.describe LeechtopDownloader::CLI do
         cli.download(url)
       end.to output(/Error downloading #{Regexp.escape(url)}: Mock failure/).to_stdout
     end
+
+    context "when a non-leechtop URL is provided" do
+      let(:page_url) { "https://example.com/some_manga" }
+
+      it "extracts links from the page and downloads them sequentially" do
+        extracted_links = ["https://leechtop.com/file1.zip", "https://leechtop.com/file2.zip"]
+        allow(LeechtopDownloader::Client).to receive(:extract_page_links).with(page_url).and_return(extracted_links)
+        allow(LeechtopDownloader::Client).to receive(:download).with(extracted_links[0]).and_return(io)
+        allow(LeechtopDownloader::Client).to receive(:download).with(extracted_links[1]).and_return(io)
+
+        expected_output = /
+          Fetching\ links\ from:\ #{Regexp.escape(page_url)}.*
+          Found\ 2\ leechtop\.com\ link\(s\)\.\ Downloading\.\.\..*
+          Successfully\ downloaded\ example\.bin\ \(8\ bytes\).*
+          Successfully\ downloaded\ example\.bin\ \(8\ bytes\)
+        /mx
+
+        expect do
+          cli.download(page_url)
+        end.to output(expected_output).to_stdout
+
+        expect(LeechtopDownloader::Client).to have_received(:extract_page_links).with(page_url)
+        expect(LeechtopDownloader::Client).to have_received(:download).with(extracted_links[0])
+        expect(LeechtopDownloader::Client).to have_received(:download).with(extracted_links[1])
+        expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(io, "example.bin").twice
+      end
+
+      it "prints a message if no leechtop links are found on the page" do
+        allow(LeechtopDownloader::Client).to receive(:extract_page_links).with(page_url).and_return([])
+
+        expected_output = /
+          Fetching\ links\ from:\ #{Regexp.escape(page_url)}.*
+          No\ leechtop\.com\ links\ found\ on\ #{Regexp.escape(page_url)}
+        /mx
+
+        expect do
+          cli.download(page_url)
+        end.to output(expected_output).to_stdout
+      end
+    end
   end
 end
