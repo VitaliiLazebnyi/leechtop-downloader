@@ -27,6 +27,29 @@ module LeechtopDownloader
       raise DownloadError, "Network or extraction failure: #{e.message}"
     end
 
+    sig { params(html: String).returns(T.any(IO, StringIO, Tempfile)) }
+    def self.download_from_html(html)
+      tokens = parse_tokens(html)
+      direct_url = fetch_ajax_direct_link(tokens)
+      Down.download(direct_url)
+    rescue Down::NotFound
+      raise DownloadError, "The file could not be found on the host server (404 Not Found). It may have been deleted."
+    rescue Down::ClientError, Down::ServerError => e
+      raise DownloadError, "The host server rejected the download: #{e.message}"
+    rescue StandardError => e
+      raise DownloadError, "Network or extraction failure: #{e.message}"
+    end
+
+    sig { params(url: String).returns(T::Hash[Symbol, String]) }
+    def self.fetch_metadata(url)
+      html = fetch_html(url)
+      document = Nokogiri::HTML(html)
+      h4 = document.at_css("h4.mb-2")
+      filename = h4&.text&.strip || ""
+
+      { html: html, filename: filename }
+    end
+
     sig { params(url: String).returns(String) }
     def self.extract_direct_url(url)
       html = fetch_html(url)

@@ -57,3 +57,14 @@ You can pass any combination of direct URLs or generic HTML pages at once:
 ```bash
 bundle exec bin/leechtop download "https://leechtop.com/example1" "https://dl-raw.ac/example-page/"
 ```
+
+### Parallel & Concurrent Downloading
+The tool features robust file-based locking. You can safely open multiple terminal tabs and run the downloader in parallel on different (or even the same) URLs. The tool will automatically detect active downloads across processes and gracefully skip any file currently being handled by another instance, preventing duplicates and data corruption.
+
+### Options
+
+**`--skip-existing`** (Default: `true`)
+By default, the tool will skip downloading files that already exist in the `downloads/` directory. If you want to force re-downloading and overwrite existing files, pass `--no-skip-existing`:
+```bash
+bundle exec bin/leechtop download "https://leechtop.com/example1" --no-skip-existing
+```

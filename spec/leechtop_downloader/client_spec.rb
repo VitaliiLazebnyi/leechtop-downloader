@@ -50,6 +50,62 @@ RSpec.describe LeechtopDownloader::Client do
     end
   end
 
+  describe ".download_from_html" do
+    let(:html) do
+      "<html><a class='go-download-direct' data-p='1' data-mb='2'></a>" \
+        "<script>var zing = {\"nonce\":\"abc\"};</script></html>"
+    end
+
+    before do
+      post_response = instance_double(Faraday::Response, status: 200, body: '{"mes":"https://actual.link/file.rar"}')
+      allow(mock_conn).to receive(:post).and_return(post_response)
+    end
+
+    it "raises a DownloadError when the file is not found (404)" do
+      allow(Down).to receive(:download).and_raise(Down::NotFound.new("404 Not Found"))
+      expect do
+        described_class.download_from_html(html)
+      end.to raise_error(LeechtopDownloader::Client::DownloadError,
+                         /The file could not be found on the host server/)
+    end
+
+    it "raises a DownloadError when the server rejects the download" do
+      allow(Down).to receive(:download).and_raise(Down::ServerError.new("500 Internal Server Error"))
+      expect do
+        described_class.download_from_html(html)
+      end.to raise_error(LeechtopDownloader::Client::DownloadError,
+                         /The host server rejected the download/)
+    end
+
+    it "raises a DownloadError for general extraction or network failures" do
+      allow(Down).to receive(:download).and_raise(StandardError.new("Network failure"))
+      expect do
+        described_class.download_from_html(html)
+      end.to raise_error(LeechtopDownloader::Client::DownloadError,
+                         /Network or extraction failure/)
+    end
+  end
+
+  describe ".fetch_metadata" do
+    it "extracts the HTML and filename" do
+      html = "<html><h4 class='mb-2'>MyFile.zip</h4></html>"
+      get_response = instance_double(Faraday::Response, status: 200, body: html)
+      allow(mock_conn).to receive(:get).with(url).and_return(get_response)
+
+      result = described_class.fetch_metadata(url)
+      expect(result).to eq({ html: html, filename: "MyFile.zip" })
+    end
+
+    it "returns an empty string for filename if h4 element is missing" do
+      html = "<html><body>No h4 here</body></html>"
+      get_response = instance_double(Faraday::Response, status: 200, body: html)
+      allow(mock_conn).to receive(:get).with(url).and_return(get_response)
+
+      result = described_class.fetch_metadata(url)
+      expect(result).to eq({ html: html, filename: "" })
+    end
+  end
+
   describe ".extract_direct_url" do
     let(:html) do
       <<~HTML
