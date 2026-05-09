@@ -9,12 +9,13 @@ module LeechtopDownloader
   class FileManager
     extend T::Sig
 
-    # LT-REQ-003, LT-REQ-004, LT-REQ-005
-    sig { params(io: T.any(IO, StringIO, Tempfile), filename: String).returns(Integer) }
+    # LT-REQ-003, LT-REQ-004, LT-REQ-005, LT-REQ-006
+    sig { params(io: T.any(IO, StringIO, Tempfile), filename: String).returns([Integer, String]) }
     def self.save_stream(io, filename)
       # Enforcement of UTC and Metric standards
       FileUtils.mkdir_p("downloads")
-      filepath = File.join("downloads", filename)
+      resolved_filename = resolve_filename(filename, "downloads")
+      filepath = File.join("downloads", resolved_filename)
 
       bytes_written = write_stream(io, filepath)
 
@@ -22,7 +23,29 @@ module LeechtopDownloader
       utc_now = Time.now.utc
       File.utime(utc_now, utc_now, filepath)
 
-      bytes_written
+      [bytes_written, resolved_filename]
+    end
+
+    sig { params(original_filename: String, directory: String).returns(String) }
+    def self.resolve_filename(original_filename, directory)
+      return original_filename unless File.exist?(File.join(directory, original_filename))
+
+      ext = File.extname(original_filename)
+      base = File.basename(original_filename, ext)
+      find_unique_filename(base, ext, directory, original_filename)
+    end
+
+    sig { params(base: String, ext: String, dir: String, orig: String).returns(String) }
+    def self.find_unique_filename(base, ext, dir, orig)
+      counter = 1
+      loop do
+        name = "#{base}_#{counter}#{ext}"
+        unless File.exist?(File.join(dir, name))
+          puts "Warning: File '#{orig}' already exists. Saving as '#{name}'"
+          return name
+        end
+        counter += 1
+      end
     end
 
     sig { params(io: T.any(IO, StringIO, Tempfile), filepath: String).returns(Integer) }
