@@ -18,22 +18,34 @@ module LeechtopDownloader
     end
 
     method_option :skip_existing, type: :boolean, default: true, desc: "Skip downloading already existing files"
-    desc "download URL...", "Download one or more URLs from leechtop.com"
+    desc "download URL_OR_FILE...", "Download one or more URLs (or a text file with links) from leechtop.com"
     # LT-REQ-001, LT-REQ-002
     def download(*urls)
       if urls.empty?
-        puts "Error: You must provide at least one URL."
+        puts "Error: You must provide at least one URL or file path."
         exit 1
       end
 
       skip_existing = options.fetch(:skip_existing, true)
 
-      urls.each do |url|
-        process_url(url, skip_existing: skip_existing)
+      urls.each do |arg|
+        process_argument(arg, skip_existing)
       end
     end
 
     private
+
+    sig { params(arg: String, skip_existing: T::Boolean).void }
+    def process_argument(arg, skip_existing)
+      if File.file?(arg)
+        File.readlines(arg, chomp: true).each do |line|
+          link = line.strip
+          process_url(link, skip_existing: skip_existing) unless link.empty?
+        end
+      else
+        process_url(arg, skip_existing: skip_existing)
+      end
+    end
 
     sig { params(url: String, skip_existing: T::Boolean).void }
     def process_url(url, skip_existing: true)

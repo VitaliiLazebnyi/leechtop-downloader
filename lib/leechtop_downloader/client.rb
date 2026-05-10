@@ -18,7 +18,7 @@ module LeechtopDownloader
     sig { params(url: String).returns(T.any(IO, StringIO, Tempfile)) }
     def self.download(url)
       direct_url = extract_direct_url(url)
-      Down.download(direct_url)
+      Down.download(direct_url, open_timeout: 10, read_timeout: 60)
     rescue Down::NotFound
       raise DownloadError, "The file could not be found on the host server (404 Not Found). It may have been deleted."
     rescue Down::ClientError, Down::ServerError => e
@@ -31,7 +31,7 @@ module LeechtopDownloader
     def self.download_from_html(html)
       tokens = parse_tokens(html)
       direct_url = fetch_ajax_direct_link(tokens)
-      Down.download(direct_url)
+      Down.download(direct_url, open_timeout: 10, read_timeout: 60)
     rescue Down::NotFound
       raise DownloadError, "The file could not be found on the host server (404 Not Found). It may have been deleted."
     rescue Down::ClientError, Down::ServerError => e
@@ -59,7 +59,7 @@ module LeechtopDownloader
 
     sig { params(url: String).returns(String) }
     def self.fetch_html(url)
-      response = Faraday.new.get(url)
+      response = Faraday.new(request: { open_timeout: 10, timeout: 60 }).get(url)
       raise "Failed to load page: HTTP #{response.status}" unless response.status == 200
 
       response.body
@@ -86,7 +86,7 @@ module LeechtopDownloader
     def self.fetch_ajax_direct_link(tokens)
       ajax_url = "https://leechtop.com/wp-admin/admin-ajax.php"
       body = URI.encode_www_form({ action: "z_do_ajax", _action: "directDownload" }.merge(tokens))
-      post_response = Faraday.new.post(ajax_url, body)
+      post_response = Faraday.new(request: { open_timeout: 10, timeout: 60 }).post(ajax_url, body)
 
       raise "AJAX request failed: HTTP #{post_response.status}" unless post_response.status == 200
 

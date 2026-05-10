@@ -31,7 +31,7 @@ RSpec.describe LeechtopDownloader::CLI do
     it "LT-REQ-001: Exits with error if no URLs are provided" do
       expect do
         cli.download
-      end.to output(/Error: You must provide at least one URL/).to_stdout.and raise_error(SystemExit)
+      end.to output(/Error: You must provide at least one URL or file path/).to_stdout.and raise_error(SystemExit)
 
       begin
         cli.download
@@ -207,6 +207,25 @@ RSpec.describe LeechtopDownloader::CLI do
         expect do
           cli.download(page_url)
         end.to output(expected_output).to_stdout
+      end
+    end
+
+    context "when a text file containing links is provided" do
+      it "reads the file and processes each non-empty line as a URL" do
+        file_path = "links.txt"
+        first_url = "https://leechtop.com/file_a.zip"
+        second_url = "https://leechtop.com/file_b.zip"
+
+        allow(File).to receive(:file?).and_call_original
+        allow(File).to receive(:file?).with(file_path).and_return(true)
+        allow(File).to receive(:readlines).with(file_path, chomp: true).and_return([first_url, "", "  ", second_url])
+        allow(cli).to receive(:process_url)
+
+        cli.download(file_path)
+
+        expect(cli).to have_received(:process_url).with(first_url, skip_existing: true)
+        expect(cli).to have_received(:process_url).with(second_url, skip_existing: true)
+        expect(cli).to have_received(:process_url).exactly(2).times
       end
     end
   end

@@ -19,14 +19,16 @@ RSpec.describe LeechtopDownloader::Client do
 
     it "LT-REQ-002: successfully downloads from a given URL after extracting direct link" do
       mock_io = StringIO.new("data")
-      allow(Down).to receive(:download).with(direct_url).and_return(mock_io)
+      allow(Down).to receive(:download).with(direct_url, open_timeout: 10, read_timeout: 60).and_return(mock_io)
 
       result = described_class.download(url)
       expect(result).to eq(mock_io)
     end
 
     it "raises a DownloadError when the file is not found (404)" do
-      allow(Down).to receive(:download).with(direct_url).and_raise(Down::NotFound.new("404 Not Found"))
+      allow(Down).to receive(:download).with(direct_url, open_timeout: 10,
+                                                         read_timeout: 60)
+                                       .and_raise(Down::NotFound.new("404 Not Found"))
 
       expect do
         described_class.download(url)
@@ -34,7 +36,9 @@ RSpec.describe LeechtopDownloader::Client do
     end
 
     it "raises a DownloadError when the server rejects the download" do
-      allow(Down).to receive(:download).with(direct_url).and_raise(Down::ServerError.new("500 Internal Server Error"))
+      allow(Down).to receive(:download).with(direct_url, open_timeout: 10,
+                                                         read_timeout: 60)
+                                       .and_raise(Down::ServerError.new("500 Internal Server Error"))
 
       expect do
         described_class.download(url)
@@ -42,7 +46,9 @@ RSpec.describe LeechtopDownloader::Client do
     end
 
     it "raises a DownloadError for general extraction or network failures" do
-      allow(Down).to receive(:download).with(direct_url).and_raise(StandardError.new("Network failure"))
+      allow(Down).to receive(:download).with(direct_url, open_timeout: 10,
+                                                         read_timeout: 60)
+                                       .and_raise(StandardError.new("Network failure"))
 
       expect do
         described_class.download(url)

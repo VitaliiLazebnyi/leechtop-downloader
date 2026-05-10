@@ -58,6 +58,13 @@ You can pass any combination of direct URLs or generic HTML pages at once:
 bundle exec bin/leechtop download "https://leechtop.com/example1" "https://dl-raw.ac/example-page/"
 ```
 
+### Batch Download via Text File
+You can also pass the path to a local text file that contains a list of URLs (one per line). The tool will read the file and download each link:
+```bash
+# links.txt contains URLs separated by newlines
+bundle exec bin/leechtop download links.txt
+```
+
 ### Parallel & Concurrent Downloading
 The tool features robust file-based locking. You can safely open multiple terminal tabs and run the downloader in parallel on different (or even the same) URLs. The tool will automatically detect active downloads across processes and gracefully skip any file currently being handled by another instance, preventing duplicates and data corruption.
 
