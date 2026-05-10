@@ -25,19 +25,17 @@ RSpec.describe LeechtopDownloader::CLI do
       allow(LeechtopDownloader::Client).to receive(:fetch_metadata).with(url).and_return({ html: "<html></html>",
                                                                                            filename: "example.bin" })
       allow(LeechtopDownloader::Client).to receive(:download_from_html).with("<html></html>").and_return(io)
-      allow(LeechtopDownloader::FileManager).to receive(:save_stream).and_return(bytes)
+      allow(LeechtopDownloader::FileManager).to receive(:save_stream) do |_stream, filename|
+        [bytes, filename]
+      end
     end
 
     it "LT-REQ-001: Exits with error if no URLs are provided" do
       expect do
         cli.download
-      end.to output(/Error: You must provide at least one URL or file path/).to_stdout.and raise_error(SystemExit)
-
-      begin
-        cli.download
-      rescue SystemExit => e
+      end.to output(/Error: You must provide at least one URL or file path/).to_stdout.and raise_error(SystemExit) { |e|
         expect(e.status).to eq(1)
-      end
+      }
     end
 
     it "LT-REQ-002: Downloads and saves a provided URL" do
@@ -60,13 +58,9 @@ RSpec.describe LeechtopDownloader::CLI do
         cli.download(url)
       end.to output(/Error: Another instance of leechtop downloader is already running\./)
          .to_stdout
-        .and raise_error(SystemExit)
-
-      begin
-        cli.download(url)
-      rescue SystemExit => e
-        expect(e.status).to eq(1)
-      end
+         .and raise_error(SystemExit) { |e|
+                expect(e.status).to eq(1)
+              }
     end
 
     it "falls back to UTC timestamp based filename if original_filename is absent" do
@@ -246,6 +240,29 @@ RSpec.describe LeechtopDownloader::CLI do
         expect(cli).to have_received(:process_url).with(second_url, skip_existing: true)
         expect(cli).to have_received(:process_url).exactly(2).times
       end
+    end
+  end
+
+  describe "#fix_encoding" do
+    it "fixes mojibake strings to valid UTF-8" do
+      # Example: "ã\u0083\u009Dã\u0082±" is the mojibake for "ポケ"
+      mojibake = "ã\u0083\u009Dã\u0082±".dup
+      expect(cli.fix_encoding(mojibake)).to eq("ポケ")
+    end
+
+    it "returns the original string if it is already valid UTF-8" do
+      valid_utf8 = "ポケット"
+      expect(cli.fix_encoding(valid_utf8)).to eq("ポケット")
+    end
+
+    it "returns the original string if it is plain ASCII" do
+      ascii = "NormalName.rar"
+      expect(cli.fix_encoding(ascii)).to eq("NormalName.rar")
+    end
+
+    it "returns the original string if the fixed encoding is not valid UTF-8" do
+      invalid_fixed = "Ã"
+      expect(cli.fix_encoding(invalid_fixed)).to eq("Ã")
     end
   end
 end

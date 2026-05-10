@@ -53,5 +53,13 @@ module LeechtopDownloader
       name = filename_hint.empty? ? "File" : "File #{filename_hint}"
       Kernel.puts "#{name} is currently being downloaded by another process. Skipping."
     end
+
+    sig { params(name: String).returns(String) }
+    def fix_encoding(name)
+      fixed = name.encode("iso-8859-1").force_encoding("utf-8")
+      fixed.valid_encoding? ? fixed : name
+    rescue EncodingError
+      name
+    end
   end
 end

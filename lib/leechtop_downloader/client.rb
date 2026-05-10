@@ -43,7 +43,7 @@ module LeechtopDownloader
     sig { params(url: String).returns(T::Hash[Symbol, String]) }
     def self.fetch_metadata(url)
       html = fetch_html(url)
-      document = Nokogiri::HTML(html)
+      document = Nokogiri::HTML(html, nil, "UTF-8")
       h4 = document.at_css("h4.mb-2")
       filename = h4&.text&.strip || ""
 
@@ -67,7 +67,7 @@ module LeechtopDownloader
 
     sig { params(html: String).returns(T::Hash[Symbol, String]) }
     def self.parse_tokens(html)
-      document = Nokogiri::HTML(html)
+      document = Nokogiri::HTML(html, nil, "UTF-8")
 
       button = document.at_css(".go-download-direct")
       raise "Could not find download button in HTML" unless button
@@ -106,7 +106,7 @@ module LeechtopDownloader
     sig { params(url: String).returns(T::Array[String]) }
     def self.extract_page_links(url)
       html = fetch_html(url)
-      document = Nokogiri::HTML(html)
+      document = Nokogiri::HTML(html, nil, "UTF-8")
 
       document.css("a").filter_map do |a|
         href = a["href"]

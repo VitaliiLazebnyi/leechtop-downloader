@@ -33,5 +33,12 @@ RSpec.configure do |config|
   config.before do
     # Ensure UTC timezone is enforced in tests
     ENV["TZ"] = "UTC"
+    # Isolate tmpdir so that running downloader instances do not lock out tests
+    ENV["TMPDIR"] = File.expand_path("tmp", __dir__)
+    FileUtils.mkdir_p(ENV.fetch("TMPDIR", nil))
+  end
+
+  config.after(:suite) do
+    FileUtils.rm_rf(ENV.fetch("TMPDIR", nil)) if ENV["TMPDIR"]&.end_with?("spec/tmp")
   end
 end

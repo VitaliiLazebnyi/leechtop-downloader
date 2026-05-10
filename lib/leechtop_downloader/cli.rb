@@ -107,15 +107,16 @@ module LeechtopDownloader
       puts "Starting download of file: #{display_name}..."
       io = Client.download_from_html(metadata.fetch(:html))
       filename = extract_filename(url, io, filename_hint)
-      bytes = FileManager.save_stream(io, filename)
-      puts "Successfully downloaded #{filename} (#{bytes} bytes)"
+      bytes_written, resolved_filename = FileManager.save_stream(io, filename)
+      puts "Successfully downloaded #{resolved_filename} (#{bytes_written} bytes)"
     end
 
     # Helper method to extract filename, falling back to a default if necessary
     sig { params(_url: String, io: T.any(IO, StringIO, Tempfile), filename_hint: String).returns(String) }
     def extract_filename(_url, io, filename_hint = "")
       if io.respond_to?(:original_filename) && T.unsafe(io).original_filename
-        T.cast(T.unsafe(io).original_filename, String)
+        name = T.cast(T.unsafe(io).original_filename, String)
+        fix_encoding(name)
       elsif !filename_hint.empty?
         filename_hint
       else
