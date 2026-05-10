@@ -5,6 +5,7 @@ require "sorbet-runtime"
 require "thor"
 require "digest"
 require "fileutils"
+require "tmpdir"
 require_relative "cli_helpers"
 
 module LeechtopDownloader
@@ -26,10 +27,12 @@ module LeechtopDownloader
         exit 1
       end
 
-      skip_existing = options.fetch(:skip_existing, true)
+      with_app_lock do
+        skip_existing = options.fetch(:skip_existing, true)
 
-      urls.each do |arg|
-        process_argument(arg, skip_existing)
+        urls.each do |arg|
+          process_argument(arg, skip_existing)
+        end
       end
     end
 
@@ -100,6 +103,8 @@ module LeechtopDownloader
 
     sig { params(url: String, metadata: T::Hash[Symbol, String], filename_hint: String).void }
     def perform_download(url, metadata, filename_hint)
+      display_name = filename_hint.empty? ? "unknown" : filename_hint
+      puts "Starting download of file: #{display_name}..."
       io = Client.download_from_html(metadata.fetch(:html))
       filename = extract_filename(url, io, filename_hint)
       bytes = FileManager.save_stream(io, filename)

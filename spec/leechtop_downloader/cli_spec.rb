@@ -50,6 +50,25 @@ RSpec.describe LeechtopDownloader::CLI do
       expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(io, "example.bin")
     end
 
+    it "LT-REQ-007: Exits with error if another instance is already running" do
+      # Mock File.open to yield a file stub that returns false for flock
+      file_stub = instance_double(File)
+      allow(file_stub).to receive(:flock).with(File::LOCK_EX | File::LOCK_NB).and_return(false)
+      allow(File).to receive(:open).and_yield(file_stub)
+
+      expect do
+        cli.download(url)
+      end.to output(/Error: Another instance of leechtop downloader is already running\./)
+         .to_stdout
+        .and raise_error(SystemExit)
+
+      begin
+        cli.download(url)
+      rescue SystemExit => e
+        expect(e.status).to eq(1)
+      end
+    end
+
     it "falls back to UTC timestamp based filename if original_filename is absent" do
       # Standard StringIO doesn't have original_filename unless stubbed
       raw_io = StringIO.new("testdata")

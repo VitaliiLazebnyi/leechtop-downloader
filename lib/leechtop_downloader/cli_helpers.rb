@@ -2,11 +2,25 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "tmpdir"
 
 module LeechtopDownloader
   # CLIHelpers provides shared utility methods for CLI operations
   module CLIHelpers
     extend T::Sig
+
+    sig { params(blk: T.proc.void).void }
+    def with_app_lock(&blk)
+      lock_path = File.join(Dir.tmpdir, "leechtop_downloader.lock")
+      File.open(lock_path, "w") do |file|
+        unless file.flock(File::LOCK_EX | File::LOCK_NB)
+          Kernel.puts "Error: Another instance of leechtop downloader is already running."
+          Kernel.exit(1)
+        end
+
+        blk.call
+      end
+    end
 
     sig { params(filename_hint: String, skip_existing: T::Boolean).returns(T::Boolean) }
     def skip_download?(filename_hint, skip_existing)
