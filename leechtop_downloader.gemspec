@@ -15,8 +15,8 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'https://github.com/VitaliiLazebnyi/leechtop-downloader'
   spec.license       = 'MIT'
   spec.cert_chain    = ['certs/leechtop_downloader-public_cert.pem']
-  if $PROGRAM_NAME.end_with?('gem') && File.exist?(File.expand_path('~/.gem/private_key.pem'))
-    spec.signing_key = File.expand_path('~/.gem/private_key.pem')
+  if $PROGRAM_NAME.end_with?('gem') && File.exist?(File.expand_path('~/.gem/gem-private_key.pem'))
+    spec.signing_key = File.expand_path('~/.gem/gem-private_key.pem')
   end
   spec.required_ruby_version = '>= 3.2.0'
   spec.metadata['rubygems_mfa_required'] = 'true'
