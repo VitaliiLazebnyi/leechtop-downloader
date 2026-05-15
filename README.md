@@ -15,7 +15,7 @@ This will make the `leechtop` command available in your terminal.
 ## Local Development Setup
 
 **Ruby Requirements:**
-- **Users**: Ruby `>= 3.0.0` is required to run the gem.
+- **Users**: Ruby `>= 3.2.0` is required to run the gem.
 
 1. Clone the repository and run:
    ```bash
