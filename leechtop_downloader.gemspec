@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
   if $PROGRAM_NAME.end_with?('gem') && File.exist?(File.expand_path('~/.gem/private_key.pem'))
     spec.signing_key = File.expand_path('~/.gem/private_key.pem')
   end
-  spec.required_ruby_version = '>= 3.0.0'
+  spec.required_ruby_version = '>= 3.2.0'
   spec.metadata['rubygems_mfa_required'] = 'true'
 
   # Specify which files should be added to the gem when it is released.
