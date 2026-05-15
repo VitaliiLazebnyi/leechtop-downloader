@@ -23,11 +23,9 @@ Gem::Specification.new do |spec|
 
   # Specify which files should be added to the gem when it is released.
   spec.files = %w[
-    BUGS.md
     Gemfile
     LICENSE.txt
     README.md
-    REQUIREMENTS.md
     leechtop_downloader.gemspec
   ] + Dir.glob('{exe,lib,certs}/**/*', base: __dir__).select do |f|
     File.file?(File.expand_path(f, __dir__))
@@ -38,22 +36,22 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   # Runtime dependencies
-  spec.add_dependency 'dotenv', '~> 3.1'
-  spec.add_dependency 'down', '~> 5.4'
-  spec.add_dependency 'faraday', '~> 2.12'
-  spec.add_dependency 'nokogiri', '~> 1.19'
-  spec.add_dependency 'sorbet-runtime'
-  spec.add_dependency 'thor', '~> 1.3'
+  spec.add_dependency 'dotenv', '~> 3.0'
+  spec.add_dependency 'down', '~> 5.0'
+  spec.add_dependency 'faraday', '~> 2.0'
+  spec.add_dependency 'nokogiri', '~> 1.0'
+  spec.add_dependency 'sorbet-runtime', '~> 0.6'
+  spec.add_dependency 'thor', '~> 1.0'
 
   # Development dependencies
-  spec.add_development_dependency 'rspec'
-  spec.add_development_dependency 'rubocop'
-  spec.add_development_dependency 'rubocop-rspec'
-  spec.add_development_dependency 'rubocop-sorbet'
-  spec.add_development_dependency 'simplecov'
-  spec.add_development_dependency 'sorbet'
-  spec.add_development_dependency 'tapioca'
-  spec.add_development_dependency 'webmock'
-  spec.add_development_dependency 'yard'
-  spec.add_development_dependency 'yard-sorbet'
+  spec.add_development_dependency 'rspec', '~> 3.13'
+  spec.add_development_dependency 'rubocop', '~> 1.86'
+  spec.add_development_dependency 'rubocop-rspec', '~> 3.9'
+  spec.add_development_dependency 'rubocop-sorbet', '~> 0.12'
+  spec.add_development_dependency 'simplecov', '~> 0.22'
+  spec.add_development_dependency 'sorbet', '~> 0.6'
+  spec.add_development_dependency 'tapioca', '~> 0.19'
+  spec.add_development_dependency 'webmock', '~> 3.26'
+  spec.add_development_dependency 'yard', '~> 0.9'
+  spec.add_development_dependency 'yard-sorbet', '~> 0.9'
 end
