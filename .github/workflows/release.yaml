@@ -34,8 +34,15 @@ jobs:
             exit 1
           else
             mkdir -p ~/.gem
-            echo "$GEM_PRIVATE_KEY" > ~/.gem/gem-private_key.pem
+            # Ensure newlines are preserved by using printf
+            printf "%s\n" "$GEM_PRIVATE_KEY" > ~/.gem/gem-private_key.pem
             chmod 0600 ~/.gem/gem-private_key.pem
+            
+            # Validate the key format
+            if ! openssl rsa -in ~/.gem/gem-private_key.pem -check -noout > /dev/null 2>&1; then
+              echo "::error title=Invalid Gem Signing Key::The GEM_PRIVATE_KEY provided is not a valid unencrypted RSA private key. Check for missing newlines or incorrect copy-pasting."
+              exit 1
+            fi
           fi
 
       - name: Build Gem
