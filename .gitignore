@@ -19,6 +19,8 @@ coverage/
 # Environment files
 .env
 .env.*
+mise.toml
+.mise.toml
 
 # Built gems
 *.gem
