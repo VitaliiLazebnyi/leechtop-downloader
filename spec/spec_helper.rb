@@ -1,19 +1,19 @@
 # typed: false
 # frozen_string_literal: true
 
-require "simplecov"
+require 'simplecov'
 
 SimpleCov.start do
-  add_filter "/spec/"
+  add_filter '/spec/'
   enable_coverage :branch
   minimum_coverage line: 100, branch: 100
 end
 
-require "webmock/rspec"
-require "sorbet-runtime"
+require 'webmock/rspec'
+require 'sorbet-runtime'
 
 # Need to load the application here, but let's wait until it's created.
-require_relative "../lib/leechtop_downloader"
+require_relative '../lib/leechtop_downloader'
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
@@ -32,13 +32,13 @@ RSpec.configure do |config|
 
   config.before do
     # Ensure UTC timezone is enforced in tests
-    ENV["TZ"] = "UTC"
+    ENV['TZ'] = 'UTC'
     # Isolate tmpdir so that running downloader instances do not lock out tests
-    ENV["TMPDIR"] = File.expand_path("tmp", __dir__)
-    FileUtils.mkdir_p(ENV.fetch("TMPDIR", nil))
+    ENV['TMPDIR'] = File.expand_path('tmp', __dir__)
+    FileUtils.mkdir_p(ENV.fetch('TMPDIR', nil))
   end
 
   config.after(:suite) do
-    FileUtils.rm_rf(ENV.fetch("TMPDIR", nil)) if ENV["TMPDIR"]&.end_with?("spec/tmp")
+    FileUtils.rm_rf(ENV.fetch('TMPDIR', nil)) if ENV['TMPDIR']&.end_with?('spec/tmp')
   end
 end

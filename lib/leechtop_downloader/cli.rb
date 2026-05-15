@@ -1,12 +1,12 @@
 # typed: true
 # frozen_string_literal: true
 
-require "sorbet-runtime"
-require "thor"
-require "digest"
-require "fileutils"
-require "tmpdir"
-require_relative "cli_helpers"
+require 'sorbet-runtime'
+require 'thor'
+require 'digest'
+require 'fileutils'
+require 'tmpdir'
+require_relative 'cli_helpers'
 
 module LeechtopDownloader
   # CLI is the Thor application for handling commands.
@@ -14,23 +14,27 @@ module LeechtopDownloader
     extend T::Sig
     include CLIHelpers
 
+    # Ensure Thor exits with an error status on failure.
+    # @return [T::Boolean] true
     def self.exit_on_failure?
       true
     end
 
-    method_option :skip_existing, type: :boolean, default: true, desc: "Skip downloading already existing files"
-    method_option :destination, type: :string, default: ".", desc: "Destination folder for downloaded files"
-    desc "download URL_OR_FILE...", "Download one or more URLs (or a text file with links) from leechtop.com"
+    method_option :skip_existing, type: :boolean, default: true, desc: 'Skip downloading already existing files'
+    method_option :destination, type: :string, default: '.', desc: 'Destination folder for downloaded files'
+    desc 'download URL_OR_FILE...', 'Download one or more URLs (or a text file with links) from leechtop.com'
     # LT-REQ-001, LT-REQ-002
+    # Main entry point to download files.
+    # @param urls [Array<String>] The URLs or file paths to download from.
     def download(*urls)
       if urls.empty?
-        puts "Error: You must provide at least one URL or file path."
+        puts 'Error: You must provide at least one URL or file path.'
         exit 1
       end
 
       with_app_lock do
         skip_existing = options.fetch(:skip_existing, true)
-        destination = options.fetch(:destination, ".")
+        destination = options.fetch(:destination, '.')
 
         urls.each { |arg| process_argument(arg, skip_existing, destination) }
       end
@@ -38,6 +42,10 @@ module LeechtopDownloader
 
     private
 
+    # Processes a single CLI argument (file or URL).
+    # @param arg [String] The argument string.
+    # @param skip_existing [T::Boolean] Whether to skip existing files.
+    # @param destination [String] The download destination directory.
     sig { params(arg: String, skip_existing: T::Boolean, destination: String).void }
     def process_argument(arg, skip_existing, destination)
       if File.file?(arg)
@@ -50,8 +58,12 @@ module LeechtopDownloader
       end
     end
 
+    # Processes a single URL to determine if it is a direct download or page parsing.
+    # @param url [String] The URL string.
+    # @param skip_existing [T::Boolean] Whether to skip existing files.
+    # @param destination [String] The download destination directory.
     sig { params(url: String, skip_existing: T::Boolean, destination: String).void }
-    def process_url(url, skip_existing: true, destination: ".")
+    def process_url(url, skip_existing: true, destination: '.')
       if url.match?(%r{^https?://(?:www\.)?leechtop\.com/})
         download_single(url, skip_existing: skip_existing, destination: destination)
       else
@@ -59,8 +71,12 @@ module LeechtopDownloader
       end
     end
 
+    # Extracts multiple links from a given URL and downloads them.
+    # @param url [String] The URL string.
+    # @param skip_existing [T::Boolean] Whether to skip existing files.
+    # @param destination [String] The download destination directory.
     sig { params(url: String, skip_existing: T::Boolean, destination: String).void }
-    def extract_and_download_links(url, skip_existing: true, destination: ".")
+    def extract_and_download_links(url, skip_existing: true, destination: '.')
       puts "Fetching links from: #{url}"
       links = Client.extract_page_links(url)
       if links.empty?
@@ -71,8 +87,12 @@ module LeechtopDownloader
       end
     end
 
+    # Downloads a single specific file.
+    # @param url [String] The URL string.
+    # @param skip_existing [T::Boolean] Whether to skip existing files.
+    # @param destination [String] The download destination directory.
     sig { params(url: String, skip_existing: T::Boolean, destination: String).void }
-    def download_single(url, skip_existing: true, destination: ".")
+    def download_single(url, skip_existing: true, destination: '.')
       puts "Downloading: #{url}\nBypassing countdown and extracting direct link..."
       metadata = Client.fetch_metadata(url)
       return if skip_download?(metadata.fetch(:filename), skip_existing, destination)
@@ -82,6 +102,11 @@ module LeechtopDownloader
       puts "Error downloading #{url}: #{e.message}"
     end
 
+    # Wraps a block execution with a file-based lock.
+    # @param url [String] The URL string.
+    # @param filename_hint [String] The filename used for the lock.
+    # @param destination [String] The download destination directory.
+    # @yield The block to execute if the lock is acquired.
     sig { params(url: String, filename_hint: String, destination: String, blk: T.proc.void).void }
     def with_lock(url, filename_hint, destination, &blk)
       lock_path = lock_path_for(url, filename_hint, destination)
@@ -93,6 +118,11 @@ module LeechtopDownloader
       FileUtils.rm_f(lock_path) if acquired
     end
 
+    # Prepares the destination and initiates the download with a lock.
+    # @param url [String] The URL string.
+    # @param metadata [Hash<Symbol, String>] Extracted metadata from the page.
+    # @param filename_hint [String] The filename to use.
+    # @param destination [String] The download destination directory.
     sig { params(url: String, metadata: T::Hash[Symbol, String], filename_hint: String, destination: String).void }
     def download_with_lock(url, metadata, filename_hint, destination)
       FileUtils.mkdir_p(destination)
@@ -101,9 +131,14 @@ module LeechtopDownloader
       end
     end
 
+    # Performs the actual downloading process.
+    # @param url [String] The URL string.
+    # @param metadata [Hash<Symbol, String>] Extracted metadata from the page.
+    # @param filename_hint [String] The filename to use.
+    # @param destination [String] The download destination directory.
     sig { params(url: String, metadata: T::Hash[Symbol, String], filename_hint: String, destination: String).void }
     def perform_download(url, metadata, filename_hint, destination)
-      display_name = filename_hint.empty? ? "unknown" : filename_hint
+      display_name = filename_hint.empty? ? 'unknown' : filename_hint
       puts "Starting download of file: #{display_name}..."
       io = Client.download_from_html(metadata.fetch(:html))
       filename = extract_filename(url, io, filename_hint)
@@ -112,8 +147,12 @@ module LeechtopDownloader
     end
 
     # Helper method to extract filename, falling back to a default if necessary
+    # @param _url [String] The URL string.
+    # @param io [IO, StringIO, Tempfile] The IO object.
+    # @param filename_hint [String] The filename hint.
+    # @return [String] The final extracted filename.
     sig { params(_url: String, io: T.any(IO, StringIO, Tempfile), filename_hint: String).returns(String) }
-    def extract_filename(_url, io, filename_hint = "")
+    def extract_filename(_url, io, filename_hint = '')
       if io.respond_to?(:original_filename) && T.unsafe(io).original_filename
         name = T.cast(T.unsafe(io).original_filename, String)
         fix_encoding(name)

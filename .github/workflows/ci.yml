@@ -9,13 +9,16 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby-version: ['3.0', '4.0.0', '4.0.4']
     steps:
     - uses: actions/checkout@v4
     
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '4.0.3'
+        ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true
         
     - name: Run RSpec (100% Coverage Enforced)
@@ -26,3 +29,9 @@ jobs:
       
     - name: Run Sorbet Type Checking
       run: bundle exec srb tc
+
+    - name: Generate YARD Documentation
+      run: bundle exec yard doc --fail-on-warning
+
+    - name: Build Gem Validation
+      run: gem build leechtop_downloader.gemspec

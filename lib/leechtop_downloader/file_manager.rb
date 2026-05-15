@@ -1,8 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
-require "sorbet-runtime"
-require "fileutils"
+require 'sorbet-runtime'
+require 'fileutils'
 
 module LeechtopDownloader
   # FileManager handles the physical saving of files using Metric/UTC standards.
@@ -10,8 +10,13 @@ module LeechtopDownloader
     extend T::Sig
 
     # LT-REQ-003, LT-REQ-004, LT-REQ-005, LT-REQ-006, BUG-LT-001
+    # Saves an IO stream to the specified destination directory.
+    # @param io [IO, StringIO, Tempfile] The stream to read from.
+    # @param filename [String] The name of the file to save.
+    # @param destination [String] The directory where the file will be saved.
+    # @return [Array<Integer, String>] The number of bytes written and the final resolved filename.
     sig { params(io: T.any(IO, StringIO, Tempfile), filename: String, destination: String).returns([Integer, String]) }
-    def self.save_stream(io, filename, destination = ".")
+    def self.save_stream(io, filename, destination = '.')
       # Enforcement of UTC and Metric standards
       FileUtils.mkdir_p(destination)
       resolved_filename = resolve_filename(filename, destination)
@@ -26,6 +31,10 @@ module LeechtopDownloader
       [bytes_written, resolved_filename]
     end
 
+    # Resolves a unique filename within the specified directory.
+    # @param original_filename [String] The original requested filename.
+    # @param directory [String] The destination directory.
+    # @return [String] A unique filename string.
     sig { params(original_filename: String, directory: String).returns(String) }
     def self.resolve_filename(original_filename, directory)
       return original_filename unless File.exist?(File.join(directory, original_filename))
@@ -35,6 +44,12 @@ module LeechtopDownloader
       find_unique_filename(base, ext, directory, original_filename)
     end
 
+    # Finds a unique filename by appending an incremental counter.
+    # @param base [String] The base filename without extension.
+    # @param ext [String] The file extension.
+    # @param dir [String] The directory to check for existence.
+    # @param orig [String] The original filename, used for warning messages.
+    # @return [String] A unique filename string.
     sig { params(base: String, ext: String, dir: String, orig: String).returns(String) }
     def self.find_unique_filename(base, ext, dir, orig)
       counter = 1
@@ -48,10 +63,14 @@ module LeechtopDownloader
       end
     end
 
+    # Writes chunks of data from an IO stream to a physical file.
+    # @param io [IO, StringIO, Tempfile] The stream to read from.
+    # @param filepath [String] The full path to the destination file.
+    # @return [Integer] The total number of bytes written.
     sig { params(io: T.any(IO, StringIO, Tempfile), filepath: String).returns(Integer) }
     def self.write_stream(io, filepath)
       bytes_written = 0
-      File.open(filepath, "wb") do |file|
+      File.open(filepath, 'wb') do |file|
         while (chunk = io.read(8192)) # 8 KB metric chunking
           file.write(chunk)
           bytes_written += chunk.bytesize

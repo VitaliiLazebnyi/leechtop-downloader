@@ -3,7 +3,7 @@ plugins:
   - rubocop-sorbet
 
 AllCops:
-  TargetRubyVersion: 4.0
+  TargetRubyVersion: 3.0
   NewCops: enable
   Exclude:
     - 'bin/**/*'
@@ -14,9 +14,6 @@ AllCops:
 Style/DisableCopsWithinSourceCodeDirective:
   Enabled: true
 
-# Keep standard styles
-Style/StringLiterals:
-  EnforcedStyle: double_quotes
 
 Style/FrozenStringLiteralComment:
   Enabled: true
@@ -25,6 +22,10 @@ Style/FrozenStringLiteralComment:
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
+    - 'leechtop_downloader.gemspec'
+
+Gemspec/DevelopmentDependencies:
+  EnforcedStyle: gemspec
 
 # Justification: Testing CLI and IO state often requires multiple assertions per context.
 RSpec/MultipleExpectations:

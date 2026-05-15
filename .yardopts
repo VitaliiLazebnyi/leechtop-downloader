@@ -1,0 +1,8 @@
+--markup markdown
+--charset utf-8
+--private
+--protected
+lib/**/*.rb
+-
+README.md
+--plugin sorbet
