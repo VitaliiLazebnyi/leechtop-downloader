@@ -22,11 +22,11 @@ module LeechtopDownloader
       end
     end
 
-    sig { params(filename_hint: String, skip_existing: T::Boolean).returns(T::Boolean) }
-    def skip_download?(filename_hint, skip_existing)
+    sig { params(filename_hint: String, skip_existing: T::Boolean, destination: String).returns(T::Boolean) }
+    def skip_download?(filename_hint, skip_existing, destination)
       return false unless skip_existing && !filename_hint.empty?
 
-      if File.exist?(File.join("downloads", filename_hint))
+      if File.exist?(File.join(destination, filename_hint))
         Kernel.puts "File #{filename_hint} already exists. Skipping."
         true
       else
@@ -34,10 +34,10 @@ module LeechtopDownloader
       end
     end
 
-    sig { params(url: String, filename_hint: String).returns(String) }
-    def lock_path_for(url, filename_hint)
+    sig { params(url: String, filename_hint: String, destination: String).returns(String) }
+    def lock_path_for(url, filename_hint, destination)
       lock_filename = filename_hint.empty? ? "#{Digest::MD5.hexdigest(url)}.lock" : "#{filename_hint}.lock"
-      File.join("downloads", lock_filename)
+      File.join(destination, lock_filename)
     end
 
     sig { params(lock_path: String).returns(T::Boolean) }

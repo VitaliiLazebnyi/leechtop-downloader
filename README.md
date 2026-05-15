@@ -38,7 +38,7 @@ bundle exec srb tc
 
 ## Usage
 
-The CLI can download files from direct `leechtop.com` links or automatically extract and download multiple links from any generic HTML webpage. All downloads are saved in the `downloads/` directory.
+The CLI can download files from direct `leechtop.com` links or automatically extract and download multiple links from any generic HTML webpage. All downloads are saved in the current folder by default, which can be overridden via the `--destination` option.
 
 ### Direct Download
 Provide a direct Leechtop URL:
@@ -71,7 +71,13 @@ The tool features robust file-based locking. You can safely open multiple termin
 ### Options
 
 **`--skip-existing`** (Default: `true`)
-By default, the tool will skip downloading files that already exist in the `downloads/` directory. If you want to force re-downloading and overwrite existing files, pass `--no-skip-existing`:
+By default, the tool will skip downloading files that already exist in the destination directory. If you want to force re-downloading and overwrite existing files, pass `--no-skip-existing`:
 ```bash
 bundle exec bin/leechtop download "https://leechtop.com/example1" --no-skip-existing
+```
+
+**`--destination`** (Default: `.`)
+Specify a custom destination directory for downloaded files:
+```bash
+bundle exec bin/leechtop download "https://leechtop.com/example1" --destination="/path/to/custom/dir"
 ```

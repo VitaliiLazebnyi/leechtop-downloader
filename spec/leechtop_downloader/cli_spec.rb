@@ -45,7 +45,7 @@ RSpec.describe LeechtopDownloader::CLI do
 
       expect(LeechtopDownloader::Client).to have_received(:fetch_metadata).with(url)
       expect(LeechtopDownloader::Client).to have_received(:download_from_html).with("<html></html>")
-      expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(io, "example.bin")
+      expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(io, "example.bin", ".")
     end
 
     it "LT-REQ-007: Exits with error if another instance is already running" do
@@ -78,7 +78,8 @@ RSpec.describe LeechtopDownloader::CLI do
         cli.download(url)
       end.to output(/Successfully downloaded #{expected_filename} \(8 bytes\)/).to_stdout
 
-      expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(raw_io, expected_filename)
+      expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(raw_io, expected_filename,
+                                                                                  ".")
     end
 
     it "falls back to filename_hint if original_filename is absent" do
@@ -91,7 +92,7 @@ RSpec.describe LeechtopDownloader::CLI do
         cli.download(url)
       end.to output(/Successfully downloaded hint\.bin \(8 bytes\)/).to_stdout
 
-      expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(raw_io, "hint.bin")
+      expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(raw_io, "hint.bin", ".")
     end
 
     it "handles download errors gracefully" do
@@ -106,7 +107,7 @@ RSpec.describe LeechtopDownloader::CLI do
     it "LT-REQ-006: skips downloading if the file already exists and skip_existing is true" do
       allow(LeechtopDownloader::Client).to receive(:fetch_metadata).with(url).and_return({ html: "<html></html>",
                                                                                            filename: "example.bin" })
-      allow(File).to receive(:exist?).with("downloads/example.bin").and_return(true)
+      allow(File).to receive(:exist?).with("./example.bin").and_return(true)
 
       expect do
         cli.download(url) # default skip_existing is true
@@ -119,26 +120,26 @@ RSpec.describe LeechtopDownloader::CLI do
     context "when concurrent downloading occurs" do
       before do
         allow(File).to receive(:exist?).and_call_original
-        allow(File).to receive(:exist?).with("downloads/example.bin").and_return(false)
-        allow(File).to receive(:exist?).with("downloads/example.bin.lock").and_return(true)
+        allow(File).to receive(:exist?).with("./example.bin").and_return(false)
+        allow(File).to receive(:exist?).with("./example.bin.lock").and_return(true)
         allow(FileUtils).to receive(:rm_f)
       end
 
       it "creates and cleans up a lock file during a successful download" do
         lock_file = instance_double(File, close: nil)
-        allow(File).to receive(:new).with("downloads/example.bin.lock", File::WRONLY | File::CREAT | File::EXCL).and_return(lock_file)
+        allow(File).to receive(:new).with("./example.bin.lock", File::WRONLY | File::CREAT | File::EXCL).and_return(lock_file)
 
         expect do
           cli.download(url)
         end.to output(/Successfully downloaded example\.bin \(8 bytes\)/).to_stdout
 
-        expect(File).to have_received(:new).with("downloads/example.bin.lock", File::WRONLY | File::CREAT | File::EXCL)
+        expect(File).to have_received(:new).with("./example.bin.lock", File::WRONLY | File::CREAT | File::EXCL)
 
-        expect(FileUtils).to have_received(:rm_f).with("downloads/example.bin.lock")
+        expect(FileUtils).to have_received(:rm_f).with("./example.bin.lock")
       end
 
       it "skips downloading if a lock file already exists (Errno::EEXIST)" do
-        allow(File).to receive(:new).with("downloads/example.bin.lock",
+        allow(File).to receive(:new).with("./example.bin.lock",
                                           File::WRONLY | File::CREAT | File::EXCL).and_raise(Errno::EEXIST)
 
         expect do
@@ -151,7 +152,7 @@ RSpec.describe LeechtopDownloader::CLI do
       it "skips downloading if a lock file already exists and filename_hint is empty" do
         allow(LeechtopDownloader::Client).to receive(:fetch_metadata).with(url).and_return({ html: "<html></html>",
                                                                                              filename: "" })
-        digest_lock_path = "downloads/#{Digest::MD5.hexdigest(url)}.lock"
+        digest_lock_path = "./#{Digest::MD5.hexdigest(url)}.lock"
         allow(File).to receive(:new).with(digest_lock_path, File::WRONLY | File::CREAT | File::EXCL).and_raise(Errno::EEXIST)
 
         expect do
@@ -163,7 +164,7 @@ RSpec.describe LeechtopDownloader::CLI do
 
       it "cleans up the lock file even if a DownloadError occurs" do
         lock_file = instance_double(File, close: nil)
-        allow(File).to receive(:new).with("downloads/example.bin.lock", File::WRONLY | File::CREAT | File::EXCL).and_return(lock_file)
+        allow(File).to receive(:new).with("./example.bin.lock", File::WRONLY | File::CREAT | File::EXCL).and_return(lock_file)
         error = LeechtopDownloader::Client::DownloadError.new("Mock failure")
         allow(LeechtopDownloader::Client).to receive(:download_from_html).and_raise(error)
 
@@ -171,7 +172,7 @@ RSpec.describe LeechtopDownloader::CLI do
           cli.download(url)
         end.to output(/Error downloading #{Regexp.escape(url)}: Mock failure/).to_stdout
 
-        expect(FileUtils).to have_received(:rm_f).with("downloads/example.bin.lock")
+        expect(FileUtils).to have_received(:rm_f).with("./example.bin.lock")
       end
     end
 
@@ -206,7 +207,8 @@ RSpec.describe LeechtopDownloader::CLI do
         expect(LeechtopDownloader::Client).to have_received(:fetch_metadata).with(extracted_links[1])
         expect(LeechtopDownloader::Client).to have_received(:download_from_html).with("<html>1</html>")
         expect(LeechtopDownloader::Client).to have_received(:download_from_html).with("<html>2</html>")
-        expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(io, "example.bin").twice
+        expect(LeechtopDownloader::FileManager).to have_received(:save_stream).with(io, "example.bin",
+                                                                                    ".").twice
       end
 
       it "prints a message if no leechtop links are found on the page" do
@@ -236,8 +238,8 @@ RSpec.describe LeechtopDownloader::CLI do
 
         cli.download(file_path)
 
-        expect(cli).to have_received(:process_url).with(first_url, skip_existing: true)
-        expect(cli).to have_received(:process_url).with(second_url, skip_existing: true)
+        expect(cli).to have_received(:process_url).with(first_url, skip_existing: true, destination: ".")
+        expect(cli).to have_received(:process_url).with(second_url, skip_existing: true, destination: ".")
         expect(cli).to have_received(:process_url).exactly(2).times
       end
     end

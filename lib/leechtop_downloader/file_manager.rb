@@ -11,7 +11,7 @@ module LeechtopDownloader
 
     # LT-REQ-003, LT-REQ-004, LT-REQ-005, LT-REQ-006, BUG-LT-001
     sig { params(io: T.any(IO, StringIO, Tempfile), filename: String, destination: String).returns([Integer, String]) }
-    def self.save_stream(io, filename, destination = "downloads")
+    def self.save_stream(io, filename, destination = ".")
       # Enforcement of UTC and Metric standards
       FileUtils.mkdir_p(destination)
       resolved_filename = resolve_filename(filename, destination)
