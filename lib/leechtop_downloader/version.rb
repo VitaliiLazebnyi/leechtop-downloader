@@ -4,5 +4,5 @@
 # The main module for the LeechtopDownloader application.
 module LeechtopDownloader
   # The current version of the application.
-  VERSION = '0.1.2'
+  VERSION = '0.1.3'
 end

@@ -1,6 +1,6 @@
 # Leechtop Downloader
 
-A CLI utility for downloading files from leechtop.com, adhering to strict quality and testing standards.
+A CLI utility for downloading files from leechtop.com.
 
 ## Installation
 
@@ -14,8 +14,7 @@ This will make the `leechtop` command available in your terminal.
 
 ## Local Development Setup
 
-**Ruby Requirements:**
-- **Users**: Ruby `>= 3.2.0` is required to run the gem.
+Ruby `>= 3.2.0` is required to run the gem.
 
 1. Clone the repository and run:
    ```bash
@@ -74,7 +73,7 @@ leechtop download links.txt
 ```
 
 ### Parallel & Concurrent Downloading
-The tool features robust file-based locking. You can safely open multiple terminal tabs and run the downloader in parallel on different (or even the same) URLs. The tool will automatically detect active downloads across processes and gracefully skip any file currently being handled by another instance, preventing duplicates and data corruption.
+Since `leechtop.com` does not allow parallel downloads, the tool enforces a strict global application lock. If you attempt to run multiple instances of the downloader concurrently in different terminal tabs, any secondary instances will automatically detect the active process, print an error message, and safely exit to prevent conflicts.
 
 ### Options
 
