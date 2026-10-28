@@ -76,7 +76,9 @@ module ScorecardCheck
     ecosystem, name, version = change.values_at(:ecosystem, :name, :version)
     return "github.com/#{name.split('/').first(2).join('/')}" if ecosystem == 'actions'
 
-    get_json("#{DEPS_DEV_API}#{ecosystem}/packages/#{name}/versions/#{version}")
+    # Gemspec entries name a requirement (e.g. "~> 0.9") instead of a version: encoded, deps.dev knows no such version.
+    get_json("#{DEPS_DEV_API}#{ecosystem}/packages/#{URI.encode_uri_component(name)}/versions/" \
+             "#{URI.encode_uri_component(version)}")
       &.dig(:relatedProjects, 0, :projectKey, :id)
   end
 

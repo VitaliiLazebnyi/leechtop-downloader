@@ -127,6 +127,11 @@ RSpec.describe ScorecardCheck do
         .to eq('github.com/ruby/rake')
     end
 
+    it 'encodes the version, so that a gemspec requirement such as "~> 0.9" is looked up (and not found) safely' do
+      stub_json('https://api.deps.dev/v3/systems/rubygems/packages/rake/versions/~%3E%200.9', nil)
+      expect(described_class.repository(dependency_change('rake', '~> 0.9', repository: nil))).to be_nil
+    end
+
     it 'finds no repository when deps.dev knows none' do
       stub_json(deps_dev_rake, nil)
       expect(described_class.repository(dependency_change('rake', '13.4.2', repository: nil))).to be_nil
