@@ -102,6 +102,12 @@ RSpec.describe LeechtopDownloader::Client do
       expect(described_class.fetch_metadata(url).fetch(:filename)).to eq('ポケット.zip')
     end
 
+    it 'reads the page as UTF-8 even when the page declares another charset' do
+      page = %(<meta charset="ISO-8859-1">#{file_page(filename: 'ポケット.zip')})
+      stub_request(:get, url).to_return(body: page.b)
+      expect(described_class.fetch_metadata(url).fetch(:filename)).to eq('ポケット.zip')
+    end
+
     it 'returns an empty filename if the h4 element is missing' do
       stub_page(url, '<html><body><h4>Other heading</h4></body></html>')
       expect(described_class.fetch_metadata(url).fetch(:filename)).to eq('')

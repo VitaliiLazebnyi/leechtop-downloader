@@ -15,6 +15,13 @@ RSpec.describe LeechtopDownloader::DownloadLock do
       lock.hold { expect(File).to exist('downloads/example.bin.lock') }
     end
 
+    it 'closes the lock file it creates' do
+      lock.hold do
+        open_locks = ObjectSpace.each_object(File).select { |file| !file.closed? && file.path.end_with?('.lock') }
+        expect(open_locks).to be_empty
+      end
+    end
+
     it 'runs the block once' do
       expect { |block| lock.hold(&block) }.to yield_control.once
     end

@@ -80,7 +80,8 @@ module LeechtopDownloader
     # @return [String] The direct download link.
     sig { params(tokens: T::Hash[Symbol, String]).returns(String) }
     def self.fetch_ajax_direct_link(tokens)
-      body = URI.encode_www_form({ action: 'z_do_ajax', _action: 'directDownload' }.merge(tokens))
+      # Faraday sends a Hash body form-encoded.
+      body = { action: 'z_do_ajax', _action: 'directDownload' }.merge(tokens)
       parse_ajax_response(request('AJAX request failed') { |connection| connection.post(AJAX_URL, body) })
     end
 
@@ -91,7 +92,7 @@ module LeechtopDownloader
     def self.parse_ajax_response(body)
       json = JSON.parse(body)
       direct_link = json['mes']
-      return direct_link if direct_link.is_a?(String) && direct_link != 'no'
+      return direct_link if direct_link.instance_of?(String) && direct_link != 'no'
 
       raise "Server rejected download request: #{json}"
     end

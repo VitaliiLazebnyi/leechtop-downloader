@@ -61,8 +61,10 @@ module LeechtopDownloader
     def self.write_stream(io, filepath)
       bytes_written = File.open(filepath, 'wb') { |file| copy_chunks(io, file) }
       # LT-REQ-005: enforce UTC timestamps on the generated file
-      utc_now = Time.now.utc
-      File.utime(utc_now, utc_now, filepath)
+      # A file time is an instant (seconds since the epoch, which counts in UTC), so the local zone of the
+      # Time object does not matter.
+      now = Time.now
+      File.utime(now, now, filepath)
       bytes_written
     end
 
