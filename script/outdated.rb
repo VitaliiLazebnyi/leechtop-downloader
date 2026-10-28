@@ -15,7 +15,12 @@ holds = YAML.safe_load_file(File.join(root, 'script', 'outdated_holds.yml'))
 problems = []
 
 # Gems of the bundle.
-output, = Open3.capture2e('bundle', 'outdated', '--parseable', chdir: root)
+# setup-ruby installs the bundle frozen (deployment mode), in which Bundler refuses to look for newer releases;
+# the lookup does not change the bundle, so it runs unfrozen. `bundle outdated` exits 1 when it finds outdated
+# gems, and with another status when it could not check.
+unfrozen = %w[BUNDLE_FROZEN BUNDLE_DEPLOYMENT].to_h { |setting| [setting, 'false'] }
+output, status = Open3.capture2e(unfrozen, 'bundle', 'outdated', '--parseable', chdir: root)
+abort "bundle outdated failed (exit #{status.exitstatus}):\n#{output}" unless [0, 1].include?(status.exitstatus)
 pattern = /^(\S+) \(newest ([^,\s]+), installed ([^,)\s]+)/
 outdated = output.scan(pattern).to_h { |name, newest, installed| [name, [newest, installed]] }
 gem_holds = holds.fetch('gems')
