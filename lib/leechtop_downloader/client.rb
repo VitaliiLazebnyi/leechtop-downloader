@@ -20,7 +20,9 @@ module LeechtopDownloader
     REQUEST_OPTIONS = T.let({ open_timeout: 10, timeout: 60 }.freeze, T::Hash[Symbol, Integer])
     # Matches the links that point to a file page on leechtop.com.
     LEECHTOP_URL = %r{\Ahttps?://(?:www\.)?leechtop\.com/}
-    private_constant :AJAX_URL, :REQUEST_OPTIONS
+    # Pages are parsed as UTF-8, whatever charset they declare.
+    HTML_ENCODING = 'UTF-8'
+    private_constant :AJAX_URL, :REQUEST_OPTIONS, :HTML_ENCODING
     public_constant :LEECHTOP_URL
 
     # LT-REQ-002, LT-REQ-003
@@ -92,7 +94,7 @@ module LeechtopDownloader
     def self.parse_ajax_response(body)
       json = JSON.parse(body)
       direct_link = json['mes']
-      return direct_link if direct_link.instance_of?(String) && direct_link != 'no'
+      return direct_link if direct_link.instance_of?(String) && !direct_link.eql?('no')
 
       raise "Server rejected download request: #{json}"
     end
@@ -113,7 +115,7 @@ module LeechtopDownloader
     # @return [Nokogiri::HTML4::Document] The parsed document.
     sig { params(html: String).returns(Nokogiri::HTML4::Document) }
     def self.parse_html(html)
-      Nokogiri::HTML(html, nil, 'UTF-8')
+      Nokogiri::HTML(html, nil, HTML_ENCODING)
     end
 
     # Reads the tokens of the download button.

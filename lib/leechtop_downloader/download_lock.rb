@@ -17,6 +17,10 @@ module LeechtopDownloader
     # @return [String] The download destination directory.
     const :directory, String
 
+    # Creates the file, and fails when it already exists.
+    CREATE_NEW = T.let(File::WRONLY | File::CREAT | File::EXCL, Integer)
+    private_constant :CREATE_NEW
+
     # Runs the block while holding the lock, and removes the lock file afterwards. When another process
     # holds the lock, prints that the file is skipped instead.
     # @yield The block to execute once the lock is acquired.
@@ -37,7 +41,7 @@ module LeechtopDownloader
     # @return [Boolean] true if the lock was acquired, false if another process holds it.
     sig { returns(T::Boolean) }
     def acquire
-      File.new(path, File::WRONLY | File::CREAT | File::EXCL).close
+      File.new(path, CREATE_NEW).close
       true
     rescue Errno::EEXIST
       false

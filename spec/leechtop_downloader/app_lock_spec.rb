@@ -17,11 +17,16 @@ RSpec.describe LeechtopDownloader::AppLock do
       end
     end
 
-    it 'treats a temporary directory whose name starts with a pipe as a directory, never as a command' do
-      FileUtils.mkdir_p('|tmp')
-      ENV['TMPDIR'] = '|tmp'
+    it 'opens the lock file with File.open, for writing' do
+      allow(File).to receive(:open).and_call_original
       described_class.hold { nil }
-      expect(Dir.children('|tmp')).to eq(['leechtop_downloader.lock'])
+      expect(File).to have_received(:open).with(lock_path, 'w')
+    end
+
+    it 'closes the lock file after the block' do
+      described_class.hold { nil }
+      open_locks = ObjectSpace.each_object(File).select { |file| !file.closed? && file.path == lock_path }
+      expect(open_locks).to be_empty
     end
 
     it 'releases the lock after the block' do
