@@ -52,8 +52,10 @@ The other CI checks run tools that are not gems. The pre-commit hook runs each o
 
 CI also runs CodeQL, dependency review and the OpenSSF Scorecard.
 
-Mutant parses the code with the `parser` gem, whose newest release only has a grammar for Ruby 3.3; run it on
-Ruby 3.3.13 (CI does). While iterating, run one subject at a time, e.g.
+Mutation testing is the one gate that does not run on the Ruby of `.ruby-version`: the newest Mutant (0.17.1)
+and Unparser (0.9.0) load the `parser` gem's `parser/current`, which only has grammars up to Ruby 3.3 and warns on
+any newer Ruby. Run it on Ruby 3.3.13 (CI does); `rake outdated` fails once that hold is no longer needed (see
+`script/outdated_holds.yml`). While iterating, run one subject at a time, e.g.
 `bundle exec mutant run 'LeechtopDownloader::Filename*'`.
 
 ## Rules
@@ -68,7 +70,8 @@ Ruby 3.3.13 (CI does). While iterating, run one subject at a time, e.g.
   deprecation notice.
 - **Behavior is specified.** Every behavioral fix needs a regression spec, and every surviving mutant needs a test that
   kills it (or, when the mutation cannot change observable behavior, simpler code).
-- **Dependencies are current.** `rake outdated` fails for any gem that is not at its newest release, unless
-  `script/outdated_holds.yml` names it together with the upstream constraint that blocks the update. The gem RBIs in
-  `sorbet/rbi/gems/` are generated: after a dependency update run `bundle exec tapioca gem` instead of editing them.
+- **Dependencies are current.** `rake outdated` fails for any gem, RubyGems or Bundler that is not at its newest
+  release, unless `script/outdated_holds.yml` names it together with the upstream constraint that blocks the update.
+  `Gemfile.lock` is committed so that CI checks exactly the bundle the RBIs were generated from; the gem RBIs in
+  `sorbet/rbi/gems/` are generated: after `bundle update` run `bundle exec tapioca gem` instead of editing them.
 - Record requirements in `REQUIREMENTS.md`, defects in `BUGS.md` and user-visible changes in `CHANGELOG.md`.

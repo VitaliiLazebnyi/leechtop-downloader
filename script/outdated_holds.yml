@@ -1,14 +1,34 @@
-# Gems that are deliberately NOT at their newest release because an upstream gemspec forbids it.
-# `rake outdated` fails for any other outdated gem, and for a hold that is no longer needed.
-# Each entry quotes the exact blocking constraint (checked against rubygems.org on 2026-10-28).
-diff-lcs:
-  newest: 2.0.0
-  blocked_by:
-    - 'rspec-expectations 3.13.5: diff-lcs >= 1.2.0, < 2.0'
-    - 'rspec-mocks 3.13.8: diff-lcs >= 1.2.0, < 2.0'
-prism:
-  newest: 2.1.0
-  blocked_by:
-    - 'rubocop-ast 1.50.0: prism ~> 1.7'
-    - 'flay 2.14.4: prism ~> 1.7'
-    - 'rbi 0.5.0: prism ~> 1.0'
+# Every dependency is at its newest release, except the holds below. Each one quotes the exact upstream reason
+# (checked on 2026-10-28). `rake outdated` (script/outdated.rb) fails for any other outdated dependency, and for
+# a hold that is no longer needed.
+
+# Gems that an upstream gemspec keeps below their newest release.
+gems:
+  diff-lcs:
+    newest: 2.0.0
+    blocked_by:
+      - 'rspec-expectations 3.13.5: diff-lcs >= 1.2.0, < 2.0'
+      - 'rspec-mocks 3.13.8: diff-lcs >= 1.2.0, < 2.0'
+  prism:
+    newest: 2.1.0
+    blocked_by:
+      - 'rubocop-ast 1.50.0: prism ~> 1.7'
+      - 'flay 2.14.4: prism ~> 1.7'
+      - 'rbi 0.5.0: prism ~> 1.0'
+
+# Jobs that cannot run on the Ruby of .ruby-version without a warning.
+ruby:
+  mutant:
+    ruby: 3.3.13
+    workflow: .github/workflows/mutation.yml
+    # The hold is needed while one of these files requires the parser gem's `parser/current`. The parser gem
+    # only has grammars up to Ruby 3.3 (its README sends Ruby 3.4+ users to Prism, see
+    # https://github.com/whitequark/parser/issues/1069), and `parser/current` warns on any other Ruby:
+    #   warning: parser/current is loading parser/ruby33, which recognizes 3.3.x-compliant syntax, but you are
+    #   running 4.0.9.
+    # Unparser already parses with Prism on Ruby 3.4+, but still loads parser/current to build its AST.
+    # Silencing the warning would be a suppression, so Mutant runs on the newest Ruby 3.3 instead (the oldest
+    # supported Ruby, which the RSpec matrix tests as well).
+    blocked_by:
+      - 'mutant 0.17.1: lib/mutant.rb'
+      - 'unparser 0.9.0: lib/unparser.rb'
