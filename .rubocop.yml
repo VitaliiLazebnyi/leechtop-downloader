@@ -1,34 +1,120 @@
+# Maximum-strictness configuration. Every cop is run in "fail the build" mode.
+# New code has no exclusions: fix the code. A cop that cannot apply to a file is configured narrowly
+# below, with the reason. Inline RuboCop directives are forbidden (see
+# Style/DisableCopsWithinSourceCodeDirective), and there is no todo file.
 plugins:
+  - rubocop-md
+  - rubocop-performance
+  - rubocop-rake
   - rubocop-rspec
   - rubocop-sorbet
+  - rubocop-thread_safety
 
 AllCops:
-  TargetRubyVersion: 3.2
   NewCops: enable
+  SuggestExtensions: false
+  TargetRubyVersion: 3.3
   Exclude:
-    - 'bin/**/*'
-    - 'sorbet/**/*'
     - 'vendor/**/*'
+    - 'coverage/**/*'
+    - 'sorbet/**/*'
+    - 'tmp/**/*'
+    - 'doc/**/*'
+    - '.yardoc/**/*'
+    - '.mutant/**/*'
+  # The executable has no .rb extension; RuboCop only finds it through its shebang when it is listed.
+  Include:
+    - '**/*.rb'
+    - '**/*.gemspec'
+    - '**/Gemfile'
+    - '**/Rakefile'
+    - '**/*.md'
+    - 'exe/*'
+    - 'script/scorecard_check'
 
-# Ban inline disable comments
+# --- Optional (disabled-by-default) cops that make sense for this codebase ---
+Layout/ClassStructure:
+  Enabled: true
+Layout/EmptyLineAfterMultilineCondition:
+  Enabled: true
+Layout/LineLength:
+  Max: 120
+Lint/NumberConversion:
+  Enabled: true
+Naming/InclusiveLanguage:
+  Enabled: true
+Performance/ChainArrayAllocation:
+  Enabled: true
+Lint/RedundantCopDisableDirective:
+  Enabled: true
+Sorbet/ForbidTUnsafe:
+  Enabled: true
+Style/ConstantVisibility:
+  Enabled: true
 Style/DisableCopsWithinSourceCodeDirective:
   Enabled: true
-
-
-Style/FrozenStringLiteralComment:
+# Style/DocumentationMethod is intentionally NOT enabled: it requires the comment to sit
+# directly above `def`, but Sorbet's `sig { ... }` must sit between them. Documentation
+# completeness is enforced instead by the YARD gate (`yard stats` must report 100%).
+Style/InvertibleUnlessCondition:
   Enabled: true
-  EnforcedStyle: always
+Style/MethodCalledOnDoEndBlock:
+  Enabled: true
+Style/RequireOrder:
+  Enabled: true
+Style/Send:
+  Enabled: true
+Style/SingleLineBlockParams:
+  Enabled: true
+Style/StringHashKeys:
+  Enabled: true
 
-Metrics/BlockLength:
-  Exclude:
-    - 'spec/**/*'
-    - 'leechtop_downloader.gemspec'
+# --- Documentation: a leading '# typed:' sigil is required by Sorbet and is not a comment to document
+Style/Documentation:
+  Enabled: true
 
 Gemspec/DevelopmentDependencies:
   EnforcedStyle: gemspec
 
-# Justification: Testing CLI and IO state often requires multiple assertions per context.
-RSpec/MultipleExpectations:
-  Enabled: false
-RSpec/ExampleLength:
-  Enabled: false
+# --- Sorbet: strictest sigils that are reachable ---
+# lib/ and exe/ are `typed: strict`. `typed: strong` is unreachable: the RBIs of Thor, Faraday, Nokogiri
+# and Down type most of their methods as T.untyped, and strong forbids calling any of them.
+Sorbet/StrictSigil:
+  Enabled: true
+  Include:
+    - 'lib/**/*.rb'
+    - 'exe/*'
+Sorbet/EnforceSigilOrder:
+  Enabled: true
+Sorbet/EnforceSignatures:
+  Enabled: true
+  Include:
+    - 'lib/**/*.rb'
+
+Naming/FileName:
+  Exclude:
+    - '**/*.md'
+Style/OneClassPerFile:
+  Exclude:
+    - '**/*.md'
+
+# rubocop-md: README snippets are illustrative, not standalone programs.
+Style/FrozenStringLiteralComment:
+  Exclude:
+    - '**/*.md'
+
+# Sorbet signatures name every parameter, including the block, so anonymous block forwarding (`&`)
+# cannot be used in typed code.
+Naming/BlockForwarding:
+  EnforcedStyle: explicit
+
+# Reek (UncommunicativeVariableName) rejects one-letter names such as the default `e`.
+Naming/RescuedExceptionsVariableName:
+  PreferredName: error
+
+# Every example runs in its own empty working directory (spec/spec_helper.rb), because the CLI downloads into
+# the current directory by default and must never write into the repository. The suite runs in one thread
+# (mutant forks processes, it does not start threads), so the process-wide effect of Dir.chdir is intended.
+ThreadSafety/DirChdir:
+  Exclude:
+    - 'spec/spec_helper.rb'

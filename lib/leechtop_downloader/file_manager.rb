@@ -1,13 +1,18 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
-require 'sorbet-runtime'
 require 'fileutils'
+require 'sorbet-runtime'
 
 module LeechtopDownloader
   # FileManager handles the physical saving of files using Metric/UTC standards.
   class FileManager
     extend T::Sig
+
+    # Size of the chunks the stream is copied in: 8 kB, a metric unit as LT-REQ-004 requires (the previous
+    # 8192 bytes were 8 KiB, a binary one).
+    CHUNK_SIZE = 8_000
+    private_constant :CHUNK_SIZE
 
     # LT-REQ-003, LT-REQ-004, LT-REQ-005, LT-REQ-006, BUG-LT-001
     # Saves an IO stream to the specified destination directory.
@@ -17,21 +22,12 @@ module LeechtopDownloader
     # @return [Array<Integer, String>] The number of bytes written and the final resolved filename.
     sig { params(io: T.any(IO, StringIO, Tempfile), filename: String, destination: String).returns([Integer, String]) }
     def self.save_stream(io, filename, destination = '.')
-      # Enforcement of UTC and Metric standards
       FileUtils.mkdir_p(destination)
-      resolved_filename = resolve_filename(filename, destination)
-      filepath = File.join(destination, resolved_filename)
-
-      bytes_written = write_stream(io, filepath)
-
-      # Enforce UTC timestamps on the generated file
-      utc_now = Time.now.utc
-      File.utime(utc_now, utc_now, filepath)
-
-      [bytes_written, resolved_filename]
+      resolved_filename = resolve_filename(Filename.sanitize(filename), destination)
+      [write_stream(io, File.join(destination, resolved_filename)), resolved_filename]
     end
 
-    # Resolves a unique filename within the specified directory.
+    # Resolves a unique filename within the specified directory, warning when the name is taken (LT-REQ-006).
     # @param original_filename [String] The original requested filename.
     # @param directory [String] The destination directory.
     # @return [String] A unique filename string.
@@ -39,44 +35,51 @@ module LeechtopDownloader
     def self.resolve_filename(original_filename, directory)
       return original_filename unless File.exist?(File.join(directory, original_filename))
 
+      unique_filename = find_unique_filename(original_filename, directory)
+      puts "Warning: File '#{original_filename}' already exists. Saving as '#{unique_filename}'"
+      unique_filename
+    end
+
+    # Finds the first free filename made by appending an incremental counter to the base name.
+    # @param original_filename [String] The filename that is already taken.
+    # @param directory [String] The directory to check for existence.
+    # @return [String] A unique filename string.
+    sig { params(original_filename: String, directory: String).returns(String) }
+    def self.find_unique_filename(original_filename, directory)
       ext = File.extname(original_filename)
       base = File.basename(original_filename, ext)
-      find_unique_filename(base, ext, directory, original_filename)
-    end
-
-    # Finds a unique filename by appending an incremental counter.
-    # @param base [String] The base filename without extension.
-    # @param ext [String] The file extension.
-    # @param dir [String] The directory to check for existence.
-    # @param orig [String] The original filename, used for warning messages.
-    # @return [String] A unique filename string.
-    sig { params(base: String, ext: String, dir: String, orig: String).returns(String) }
-    def self.find_unique_filename(base, ext, dir, orig)
       counter = 1
-      loop do
-        name = "#{base}_#{counter}#{ext}"
-        unless File.exist?(File.join(dir, name))
-          puts "Warning: File '#{orig}' already exists. Saving as '#{name}'"
-          return name
-        end
-        counter += 1
-      end
+      counter += 1 while File.exist?(File.join(directory, "#{base}_#{counter}#{ext}"))
+      "#{base}_#{counter}#{ext}"
     end
 
-    # Writes chunks of data from an IO stream to a physical file.
+    # Writes chunks of data from an IO stream to a physical file and stamps it with the current UTC time.
     # @param io [IO, StringIO, Tempfile] The stream to read from.
     # @param filepath [String] The full path to the destination file.
     # @return [Integer] The total number of bytes written.
     sig { params(io: T.any(IO, StringIO, Tempfile), filepath: String).returns(Integer) }
     def self.write_stream(io, filepath)
+      bytes_written = File.open(filepath, 'wb') { |file| copy_chunks(io, file) }
+      # LT-REQ-005: enforce UTC timestamps on the generated file
+      # A file time is an instant (seconds since the epoch, which counts in UTC), so the local zone of the
+      # Time object does not matter.
+      now = Time.now
+      File.utime(now, now, filepath)
+      bytes_written
+    end
+
+    # Copies a stream into a file in chunks of CHUNK_SIZE bytes.
+    # @param io [IO, StringIO, Tempfile] The stream to read from.
+    # @param file [File] The file to write to.
+    # @return [Integer] The total number of bytes written.
+    sig { params(io: T.any(IO, StringIO, Tempfile), file: File).returns(Integer) }
+    def self.copy_chunks(io, file)
       bytes_written = 0
-      File.open(filepath, 'wb') do |file|
-        while (chunk = io.read(8192)) # 8 KB metric chunking
-          file.write(chunk)
-          bytes_written += chunk.bytesize
-        end
+      while (chunk = io.read(CHUNK_SIZE))
+        bytes_written += file.write(chunk)
       end
       bytes_written
     end
+    private_class_method :copy_chunks
   end
 end

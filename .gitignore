@@ -21,7 +21,9 @@ coverage/
 .env.*
 mise.toml
 .mise.toml
-Gemfile.lock
+
+# Mutant
+/.mutant/
 
 # Built gems
 *.gem
