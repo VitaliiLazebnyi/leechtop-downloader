@@ -19,6 +19,8 @@
 - Ruby 3.3 or newer is required (Ruby 3.2 reached its end of life); development uses Ruby 4.0.9.
 - Runtime dependencies require their current releases: dotenv 3.2, down 5.6, faraday 2.15, nokogiri 1.19 and
   thor 1.5.
+- Pull requests fail on any added dependency whose OpenSSF Scorecard is below 3, except for the per-package
+  allowances (with their reasons) in `.github/dependency-review.yml`.
 - `Gemfile.lock` is committed, so CI checks the exact bundle the Sorbet RBIs were generated from.
 - The internals of the CLI moved into `LeechtopDownloader::Downloader`, `AppLock`, `DownloadLock` and `Filename`;
   `LeechtopDownloader::CLIHelpers` was removed.

@@ -54,10 +54,24 @@ jobs:
       with:
         persist-credentials: false
 
-    - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+    # Vulnerabilities, licenses and denied packages; the configuration file explains the Scorecard settings.
+    - id: review
+      uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
       with:
-        fail-on-severity: low
-        comment-summary-in-pr: on-failure
+        config-file: ./.github/dependency-review.yml
+
+    # The OpenSSF Scorecard of every added dependency, with the per-package allowances of the configuration file.
+    - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+      with:
+        ruby-version: .ruby-version
+        rubygems: latest
+    - name: Check the Ruby version
+      run: script/check_ruby.sh
+    - name: OpenSSF Scorecard of the added dependencies
+      env:
+        DEPENDENCY_CHANGES: ${{ steps.review.outputs.dependency-changes }}
+        RUBYOPT: -w -W:deprecated -W:performance
+      run: script/scorecard_check
 
   gitleaks:
     name: Secret scanning (gitleaks)

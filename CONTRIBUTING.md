@@ -50,7 +50,10 @@ The other CI checks run tools that are not gems. The pre-commit hook runs each o
 | [typos](https://github.com/crate-ci/typos) | the spelling of every tracked file (`_typos.toml`) |
 | [gitleaks](https://github.com/gitleaks/gitleaks) | the full git history for committed secrets |
 
-CI also runs CodeQL, dependency review and the OpenSSF Scorecard.
+CI also runs CodeQL, the OpenSSF Scorecard of this repository, and dependency review on pull requests. Dependency
+review fails on a vulnerable or denied dependency, and `script/scorecard_check` fails on any added dependency whose
+OpenSSF Scorecard is below 3, unless `.github/dependency-review.yml` allows that exact package version at that score
+with a written reason (the action itself can only lower its threshold for every package at once).
 
 Mutation testing is the one gate that does not run on the Ruby of `.ruby-version`: the newest Mutant (0.17.1)
 and Unparser (0.9.0) load the `parser` gem's `parser/current`, which only has grammars up to Ruby 3.3 and warns on

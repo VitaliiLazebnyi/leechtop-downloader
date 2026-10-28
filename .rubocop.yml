@@ -30,6 +30,7 @@ AllCops:
     - '**/Rakefile'
     - '**/*.md'
     - 'exe/*'
+    - 'script/scorecard_check'
 
 # --- Optional (disabled-by-default) cops that make sense for this codebase ---
 Layout/ClassStructure:
