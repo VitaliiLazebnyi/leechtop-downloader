@@ -20,8 +20,8 @@ module LeechtopDownloader
     def self.hold(&blk)
       File.open(File.join(Dir.tmpdir, FILENAME), 'w') do |file|
         unless file.flock(File::LOCK_EX | File::LOCK_NB)
-          Kernel.puts 'Error: Another instance of leechtop downloader is already running.'
-          Kernel.exit(1)
+          puts 'Error: Another instance of leechtop downloader is already running.'
+          exit(1)
         end
 
         yield

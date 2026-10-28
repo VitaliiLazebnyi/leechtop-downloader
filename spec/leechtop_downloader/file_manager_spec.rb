@@ -44,6 +44,11 @@ RSpec.describe LeechtopDownloader::FileManager do
       expect([File.atime(filepath), File.mtime(filepath)]).to eq([now, now])
     end
 
+    it 'treats a destination whose name starts with a pipe as a directory, never as a command' do
+      described_class.save_stream(io, filename, '|echo')
+      expect(File.read(File.join('|echo', filename))).to eq(file_content)
+    end
+
     it 'never writes outside the destination directory' do
       described_class.save_stream(io, '../escaped.bin', downloads_dir)
       expect(Dir.children(Dir.pwd)).to eq([downloads_dir])

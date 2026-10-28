@@ -50,7 +50,7 @@ module LeechtopDownloader
     sig { void }
     def report_busy
       name = @filename.empty? ? 'File' : "File #{@filename}"
-      Kernel.puts "#{name} is currently being downloaded by another process. Skipping."
+      puts "#{name} is currently being downloaded by another process. Skipping."
     end
   end
 end

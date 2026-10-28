@@ -20,11 +20,10 @@ module LeechtopDownloader
       # @return [String] The message.
       sig { params(error: StandardError).returns(String) }
       def self.describe(error)
-        detail = error.message
         case error
         when Down::NotFound then NOT_FOUND
-        when Down::ClientError, Down::ServerError then "The host server rejected the download: #{detail}"
-        else "Network or extraction failure: #{detail}"
+        when Down::ClientError, Down::ServerError then "The host server rejected the download: #{error}"
+        else "Network or extraction failure: #{error}"
         end
       end
     end

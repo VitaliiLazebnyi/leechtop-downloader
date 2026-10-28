@@ -151,7 +151,7 @@ module LeechtopDownloader
       response = yield(Faraday.new(request: REQUEST_OPTIONS))
       successful(failure, response.status) { response.body }
     rescue Faraday::Error => error
-      raise DownloadError, "#{failure}: #{error.message}"
+      raise DownloadError, "#{failure}: #{error}"
     end
 
     # Returns the body of a response if its status is HTTP 200.

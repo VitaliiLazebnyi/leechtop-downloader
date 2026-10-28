@@ -65,7 +65,7 @@ module LeechtopDownloader
       puts "Fetching links from: #{url}"
       download_all(Client.extract_page_links(url), url)
     rescue Error => error
-      puts "Error fetching links from #{url}: #{error.message}"
+      puts "Error fetching links from #{url}: #{error}"
     end
 
     # Downloads the leechtop.com links found on a page.
@@ -87,7 +87,7 @@ module LeechtopDownloader
       html, filename = Downloader.page(url)
       save(url, html, filename) unless skip?(filename)
     rescue Error => error
-      puts "Error downloading #{url}: #{error.message}"
+      puts "Error downloading #{url}: #{error}"
     end
 
     # Checks if a download should be skipped because the file already exists.

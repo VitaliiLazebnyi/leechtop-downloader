@@ -34,7 +34,8 @@ module LeechtopDownloader
       return repair_encoding(original) if original
       return page_filename unless page_filename.empty?
 
-      "leechtop_#{Time.now.utc.to_i}.bin"
+      # Seconds since the Unix epoch, which counts from 1970-01-01 00:00 UTC whatever the local time zone.
+      "leechtop_#{Time.now.strftime('%s')}.bin"
     end
 
     # Fixes mojibake (UTF-8 bytes that were decoded as ISO-8859-1) back to valid UTF-8.

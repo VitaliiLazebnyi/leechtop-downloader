@@ -36,7 +36,7 @@ module LeechtopDownloader
       return original_filename unless File.exist?(File.join(directory, original_filename))
 
       unique_filename = find_unique_filename(original_filename, directory)
-      Kernel.puts "Warning: File '#{original_filename}' already exists. Saving as '#{unique_filename}'"
+      puts "Warning: File '#{original_filename}' already exists. Saving as '#{unique_filename}'"
       unique_filename
     end
 
@@ -48,8 +48,9 @@ module LeechtopDownloader
     def self.find_unique_filename(original_filename, directory)
       ext = File.extname(original_filename)
       base = File.basename(original_filename, ext)
-      T.must((1..).lazy.map { |counter| "#{base}_#{counter}#{ext}" }
-                         .find { |name| !File.exist?(File.join(directory, name)) })
+      counter = 1
+      counter += 1 while File.exist?(File.join(directory, "#{base}_#{counter}#{ext}"))
+      "#{base}_#{counter}#{ext}"
     end
 
     # Writes chunks of data from an IO stream to a physical file and stamps it with the current UTC time.
