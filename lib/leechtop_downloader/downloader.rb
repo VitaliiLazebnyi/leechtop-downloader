@@ -7,8 +7,13 @@ require 'sorbet-runtime'
 
 module LeechtopDownloader
   # Downloads leechtop.com files, either from their page URL or from every leechtop.com link on another page.
-  class Downloader
+  class Downloader < T::Struct
     extend T::Sig
+
+    # @return [Boolean] Whether to skip files that already exist in the destination.
+    const :skip_existing, T::Boolean
+    # @return [String] The download destination directory.
+    const :destination, String
 
     # The URLs an argument stands for: the non-empty lines of the file it names (read as UTF-8, whatever the
     # locale), or the argument itself.
@@ -31,14 +36,6 @@ module LeechtopDownloader
     def self.page(url)
       metadata = Client.fetch_metadata(url)
       [metadata.fetch(:html), Filename.sanitize(metadata.fetch(:filename))]
-    end
-
-    # @param skip_existing [Boolean] Whether to skip files that already exist in the destination.
-    # @param destination [String] The download destination directory.
-    sig { params(skip_existing: T::Boolean, destination: String).void }
-    def initialize(skip_existing:, destination:)
-      @skip_existing = skip_existing
-      @destination = destination
     end
 
     # Processes a single CLI argument: a URL, or a text file with one URL per line.
@@ -95,7 +92,7 @@ module LeechtopDownloader
     # @return [Boolean] true if the download should be skipped, false otherwise.
     sig { params(filename: String).returns(T::Boolean) }
     def skip?(filename)
-      return false unless @skip_existing && !filename.empty? && File.exist?(File.join(@destination, filename))
+      return false unless skip_existing && !filename.empty? && File.exist?(File.join(destination, filename))
 
       puts "File #{filename} already exists. Skipping."
       true
@@ -107,8 +104,8 @@ module LeechtopDownloader
     # @param filename [String] The name of the file shown on the page.
     sig { params(url: String, html: String, filename: String).void }
     def save(url, html, filename)
-      FileUtils.mkdir_p(@destination)
-      DownloadLock.new(url:, filename:, directory: @destination).hold { transfer(html, filename) }
+      FileUtils.mkdir_p(destination)
+      DownloadLock.new(url:, filename:, directory: destination).hold { transfer(html, filename) }
     end
 
     # Downloads the file of a page into the destination directory.
@@ -118,7 +115,7 @@ module LeechtopDownloader
     def transfer(html, filename)
       puts "Starting download of file: #{filename.empty? ? 'unknown' : filename}..."
       io = Client.download_from_html(html)
-      bytes_written, saved_name = FileManager.save_stream(io, Filename.for_download(io, filename), @destination)
+      bytes_written, saved_name = FileManager.save_stream(io, Filename.for_download(io, filename), destination)
       puts "Successfully downloaded #{saved_name} (#{bytes_written} bytes)"
     end
   end
