@@ -11,12 +11,13 @@ on:
 
 permissions: {}
 
+# Ruby warnings are enabled on each step that runs code: `-w` (every warning) for this repository's code, and
+# the deprecation and performance categories for the tools. They are not enabled while setup-ruby installs the
+# gems, where RubyGems' own installer is the only code that runs.
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-env:
-  RUBYOPT: -W:deprecated -W:performance
 
 jobs:
   bundler-audit:
@@ -33,9 +34,12 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: bundle exec rake audit
+      env:
+        RUBYOPT: -W:deprecated -W:performance
 
   # Requires the repository's Dependency graph to be enabled (Settings > Code security).
   dependency-review:

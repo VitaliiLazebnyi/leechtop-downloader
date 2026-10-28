@@ -7,13 +7,14 @@ on:
 
 permissions: {}
 
+# Ruby warnings are enabled on each step that runs code: `-w` (every warning) for this repository's code, and
+# the deprecation and performance categories for the tools. They are not enabled while setup-ruby installs the
+# gems, where RubyGems' own installer is the only code that runs.
+
 # Never cancel a release in flight.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
-
-env:
-  RUBYOPT: -W:deprecated -W:performance
 
 jobs:
   # Gate the release on the full verification suite so a broken tagged commit
@@ -23,8 +24,6 @@ jobs:
     runs-on: ubuntu-26.04
     permissions:
       contents: read
-    env:
-      RUBYOPT: -w -W:deprecated -W:performance
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -35,10 +34,16 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: false
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: bundle install --jobs 4 --retry 3
-    - run: bundle exec rake
+    - run: bundle exec rake spec legacy_suite
+      env:
+        RUBYOPT: -w -W:deprecated -W:performance
+    - run: bundle exec rake rubocop suppressions typecheck yard reek flay audit
+      env:
+        RUBYOPT: -W:deprecated -W:performance
 
   build_and_release:
     name: Build and release
@@ -59,6 +64,7 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: false
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: bundle install --jobs 4 --retry 3
@@ -94,6 +100,8 @@ jobs:
         chmod 0600 ~/.gem/gem-private_key.pem
 
     - run: gem build leechtop_downloader.gemspec
+      env:
+        RUBYOPT: -W:deprecated -W:performance
 
     - name: Verify the built gem is signed
       run: |

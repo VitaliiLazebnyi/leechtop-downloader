@@ -10,12 +10,13 @@ on:
 # Nothing is writable by default; every job re-declares the (read-only) permissions it needs.
 permissions: {}
 
+# Ruby warnings are enabled on each step that runs code: `-w` (every warning) for this repository's code, and
+# the deprecation and performance categories for the tools. They are not enabled while setup-ruby installs the
+# gems, where RubyGems' own installer is the only code that runs.
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-env:
-  RUBYOPT: -W:deprecated -W:performance
 
 jobs:
   test:
@@ -27,8 +28,6 @@ jobs:
       fail-fast: false
       matrix:
         ruby: ["3.3.13", "3.4.12", "4.0.9"]
-    env:
-      RUBYOPT: -w -W:deprecated -W:performance
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -38,6 +37,7 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       env:
         EXPECTED_RUBY: ${{ matrix.ruby }}
@@ -45,6 +45,8 @@ jobs:
     # SimpleCov enforces minimum_coverage 100 (line + branch) and fails the run below it.
     - name: RSpec with the 100% line + branch coverage gate
       run: bundle exec rspec
+      env:
+        RUBYOPT: -w -W:deprecated -W:performance
 
   # Behavior is unchanged: the spec files that were on `main` before the hardening pass must still pass
   # against the current lib/ (see script/legacy_suite.rb for the few justified differences).
@@ -53,8 +55,6 @@ jobs:
     runs-on: ubuntu-26.04
     permissions:
       contents: read
-    env:
-      RUBYOPT: -w -W:deprecated -W:performance
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -65,9 +65,12 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: bundle exec rake legacy_suite
+      env:
+        RUBYOPT: -w -W:deprecated -W:performance
 
   lint:
     name: RuboCop
@@ -83,9 +86,12 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: bundle exec rake rubocop
+      env:
+        RUBYOPT: -W:deprecated -W:performance
     - name: Forbid inline suppressions
       run: script/forbidden_suppressions.sh
 
@@ -103,9 +109,12 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: bundle exec rake typecheck
+      env:
+        RUBYOPT: -W:deprecated -W:performance
 
   docs:
     name: YARD (100% documented)
@@ -121,9 +130,12 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: bundle exec rake yard
+      env:
+        RUBYOPT: -W:deprecated -W:performance
 
   smells:
     name: Reek and Flay
@@ -139,9 +151,12 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: bundle exec rake reek flay
+      env:
+        RUBYOPT: -W:deprecated -W:performance
 
   # Markdown style and spelling of every tracked file.
   prose:
@@ -186,9 +201,12 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: bundle exec rake outdated
+      env:
+        RUBYOPT: -W:deprecated -W:performance
 
   build:
     name: Build gem
@@ -204,11 +222,16 @@ jobs:
       with:
         ruby-version: .ruby-version
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh
     - run: gem build leechtop_downloader.gemspec
+      env:
+        RUBYOPT: -W:deprecated -W:performance
     - name: Smoke-test the executable
       run: bundle exec exe/leechtop help download
+      env:
+        RUBYOPT: -w -W:deprecated -W:performance
 
   warning-gate:
     name: Warning gate

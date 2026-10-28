@@ -9,12 +9,15 @@ on:
 
 permissions: {}
 
+# Ruby warnings are enabled on each step that runs code: `-w` (every warning) for this repository's code, and
+# the deprecation and performance categories for the tools. They are not enabled while setup-ruby installs the
+# gems, where RubyGems' own installer is the only code that runs.
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  RUBYOPT: -W:deprecated -W:performance
   LANG: C.UTF-8
   LC_ALL: C.UTF-8
 
@@ -36,11 +39,14 @@ jobs:
       with:
         ruby-version: "3.3.13"
         bundler-cache: true
+        rubygems: latest
     - name: Check the Ruby version
       run: script/check_ruby.sh 3.3.13
     # The code base is small, so every run mutates every subject. Any alive mutation fails the build.
     - name: Mutant (every subject)
       run: bundle exec rake mutant
+      env:
+        RUBYOPT: -W:deprecated -W:performance
 
   warning-gate:
     name: Warning gate
