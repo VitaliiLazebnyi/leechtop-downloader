@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+# Copyright (c) 2026 Vitalii Lazebnyi
+
 require 'down'
 require 'fileutils'
 require 'sorbet-runtime'
@@ -23,7 +25,7 @@ module LeechtopDownloader
     def self.urls_in(arg)
       return [arg] unless File.file?(arg)
 
-      File.readlines(arg, chomp: true, encoding: Encoding::UTF_8).filter_map do |line|
+      File.foreach(arg, chomp: true, encoding: Encoding::UTF_8).filter_map do |line|
         link = line.strip
         link unless link.empty?
       end
@@ -59,10 +61,10 @@ module LeechtopDownloader
     # @param url [String] The URL of the page.
     sig { params(url: String).void }
     def download_links(url)
-      puts "Fetching links from: #{url}"
+      puts("Fetching links from: #{url}")
       download_all(Client.extract_page_links(url), url)
     rescue Error => error
-      puts "Error fetching links from #{url}: #{error}"
+      puts("Error fetching links from #{url}: #{error}")
     end
 
     # Downloads the leechtop.com links found on a page.
@@ -72,7 +74,7 @@ module LeechtopDownloader
     def download_all(links, page_url)
       return puts("No leechtop.com links found on #{page_url}") if links.empty?
 
-      puts "Found #{links.size} leechtop.com link(s). Downloading..."
+      puts("Found #{links.size} leechtop.com link(s). Downloading...")
       links.each { |link| download(link) }
     end
 
@@ -80,11 +82,11 @@ module LeechtopDownloader
     # @param url [String] The URL of the file page.
     sig { params(url: String).void }
     def download(url)
-      puts "Downloading: #{url}\nBypassing countdown and extracting direct link..."
+      puts("Downloading: #{url}\nBypassing countdown and extracting direct link...")
       html, filename = Downloader.page(url)
       save(url, html, filename) unless skip?(filename)
     rescue Error => error
-      puts "Error downloading #{url}: #{error}"
+      puts("Error downloading #{url}: #{error}")
     end
 
     # Checks if a download should be skipped because the file already exists.
@@ -94,7 +96,7 @@ module LeechtopDownloader
     def skip?(filename)
       return false unless skip_existing && !filename.empty? && File.exist?(File.join(destination, filename))
 
-      puts "File #{filename} already exists. Skipping."
+      puts("File #{filename} already exists. Skipping.")
       true
     end
 
@@ -113,10 +115,10 @@ module LeechtopDownloader
     # @param filename [String] The name of the file shown on the page.
     sig { params(html: String, filename: String).void }
     def transfer(html, filename)
-      puts "Starting download of file: #{filename.empty? ? 'unknown' : filename}..."
+      puts("Starting download of file: #{filename.empty? ? 'unknown' : filename}...")
       io = Client.download_from_html(html)
       bytes_written, saved_name = FileManager.save_stream(io, Filename.for_download(io, filename), destination)
-      puts "Successfully downloaded #{saved_name} (#{bytes_written} bytes)"
+      puts("Successfully downloaded #{saved_name} (#{bytes_written} bytes)")
     end
   end
 end

@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+# Copyright (c) 2026 Vitalii Lazebnyi
+
 require 'sorbet-runtime'
 require 'tmpdir'
 
@@ -22,7 +24,7 @@ module LeechtopDownloader
     def self.hold(&blk)
       File.open(File.join(Dir.tmpdir, FILENAME), 'w') do |file|
         unless file.flock(LOCK_WITHOUT_WAITING)
-          puts 'Error: Another instance of leechtop downloader is already running.'
+          puts('Error: Another instance of leechtop downloader is already running.')
           exit(1)
         end
 

@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+# Copyright (c) 2026 Vitalii Lazebnyi
+
 require 'down'
 require 'faraday'
 require 'json'
@@ -8,6 +10,7 @@ require 'nokogiri'
 require 'sorbet-runtime'
 
 require_relative 'client/download_error'
+require_relative 'client/extraction_error'
 
 module LeechtopDownloader
   # Client handles the network requests to Leechtop.
@@ -44,7 +47,7 @@ module LeechtopDownloader
 
     # Fetches the HTML and metadata (filename) from a given URL.
     # @param url [String] The URL to fetch.
-    # @return [Hash<Symbol, String>] The parsed metadata including html and filename.
+    # @return [Hash{Symbol => String}] The parsed metadata including html and filename.
     sig { params(url: String).returns(T::Hash[Symbol, String]) }
     def self.fetch_metadata(url)
       html = fetch_html(url)
@@ -71,14 +74,14 @@ module LeechtopDownloader
 
     # Parses the necessary tokens from the given HTML string.
     # @param html [String] The HTML content.
-    # @return [Hash<Symbol, String>] The extracted tokens.
+    # @return [Hash{Symbol => String}] The extracted tokens.
     sig { params(html: String).returns(T::Hash[Symbol, String]) }
     def self.parse_tokens(html)
       { **button_tokens(parse_html(html)), nonce: page_nonce(html) }
     end
 
     # Submits the parsed tokens via AJAX to obtain the direct download link.
-    # @param tokens [Hash<Symbol, String>] The extracted tokens.
+    # @param tokens [Hash{Symbol => String}] The extracted tokens.
     # @return [String] The direct download link.
     sig { params(tokens: T::Hash[Symbol, String]).returns(String) }
     def self.fetch_ajax_direct_link(tokens)
@@ -90,13 +93,14 @@ module LeechtopDownloader
     # Parses the AJAX response to extract the direct link.
     # @param body [String] The JSON string.
     # @return [String] The extracted direct download link.
+    # @raise [ExtractionError] when the server refuses to give the direct link.
     sig { params(body: String).returns(String) }
     def self.parse_ajax_response(body)
       json = JSON.parse(body)
       direct_link = json['mes']
       return direct_link if direct_link.instance_of?(String) && !direct_link.eql?('no')
 
-      raise "Server rejected download request: #{json}"
+      raise(ExtractionError, "Server rejected download request: #{json}")
     end
 
     # Extracts all Leechtop links from a given page HTML.
@@ -120,14 +124,15 @@ module LeechtopDownloader
 
     # Reads the tokens of the download button.
     # @param document [Nokogiri::HTML4::Document] The parsed page.
-    # @return [Hash<Symbol, String>] The +p+ and +mb+ tokens.
+    # @return [Hash{Symbol => String}] The +p+ and +mb+ tokens.
+    # @raise [ExtractionError] when the page has no download button, or the button has no tokens.
     sig { params(document: Nokogiri::HTML4::Document).returns(T::Hash[Symbol, String]) }
     def self.button_tokens(document)
       button = document.at_css('.go-download-direct')
-      raise 'Could not find download button in HTML' unless button
+      raise(ExtractionError, 'Could not find download button in HTML') unless button
 
       tokens = { p: button['data-p'], mb: button['data-mb'] }
-      raise 'Could not find the tokens of the download button' if tokens.value?(nil)
+      raise(ExtractionError, 'Could not find the tokens of the download button') if tokens.value?(nil)
 
       tokens
     end
@@ -135,9 +140,10 @@ module LeechtopDownloader
     # Reads the nonce the page passes to its scripts.
     # @param html [String] The HTML content.
     # @return [String] The nonce.
+    # @raise [ExtractionError] when the page passes no nonce.
     sig { params(html: String).returns(String) }
     def self.page_nonce(html)
-      html[/"nonce":"([^"]+)"/, 1] || raise('Could not extract nonce from page')
+      html[/"nonce":"([^"]+)"/, 1] || raise(ExtractionError, 'Could not extract nonce from page')
     end
 
     # Sends one request with the page timeouts and returns the body of its successful response.
@@ -154,7 +160,7 @@ module LeechtopDownloader
       response = yield(Faraday.new(request: REQUEST_OPTIONS))
       successful(failure, response.status) { response.body }
     rescue Faraday::Error => error
-      raise DownloadError, "#{failure}: #{error}"
+      raise(DownloadError, "#{failure}: #{error}")
     end
 
     # Returns the body of a response if its status is HTTP 200.
@@ -184,10 +190,15 @@ module LeechtopDownloader
     def self.translate_errors(&blk)
       yield
     rescue StandardError => error
-      raise DownloadError, DownloadError.describe(error)
+      raise(DownloadError, DownloadError.describe(error))
     end
 
-    private_class_method :parse_html, :button_tokens, :page_nonce, :request, :successful, :download_direct,
-                         :translate_errors
+    private_class_method :parse_html,
+      :button_tokens,
+      :page_nonce,
+      :request,
+      :successful,
+      :download_direct,
+      :translate_errors
   end
 end

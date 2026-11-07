@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+# Copyright (c) 2026 Vitalii Lazebnyi
+
 require 'fileutils'
 require 'sorbet-runtime'
 
@@ -36,7 +38,7 @@ module LeechtopDownloader
       return original_filename unless File.exist?(File.join(directory, original_filename))
 
       unique_filename = find_unique_filename(original_filename, directory)
-      puts "Warning: File '#{original_filename}' already exists. Saving as '#{unique_filename}'"
+      puts("Warning: File '#{original_filename}' already exists. Saving as '#{unique_filename}'")
       unique_filename
     end
 

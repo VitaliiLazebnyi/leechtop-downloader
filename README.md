@@ -19,22 +19,15 @@ Ruby `>= 3.3` is required; development uses the Ruby in `.ruby-version`.
 ```bash
 bundle install
 git config core.hooksPath .githooks   # optional: run the fast gates before every commit
-bundle exec rake                      # every gate CI enforces (see below)
+script/check                          # every check CI runs (see below)
 ```
 
-The project tolerates no warnings and no suppressions. `bundle exec rake` runs:
-
-- RSpec with Ruby warnings enabled (any warning fails the run), 100% line and branch coverage, no pending or skipped
-  examples, and no real network access (WebMock);
-- the original spec suite of `main`, against the current code, to prove that behavior did not change;
-- RuboCop with its plugins, with no todo file and no inline directives;
-- a check that no file contains an inline suppression of any tool;
-- Sorbet at `typed: strict` (after verifying that the Tapioca-generated gem RBIs match the bundle);
-- YARD (100% documented), Reek and Flay (no smell, no duplication) and bundler-audit.
-
-Mutation testing (`bundle exec rake mutant`, every mutation must be killed) and the outdated-dependency check
-(`bundle exec rake outdated`) run in CI as well. See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete list of
-gates, including the workflow, shell, Markdown, spelling and secret scanners.
+The project tolerates no warnings and no suppressions. `script/check` runs every check of CI locally: RSpec with
+Ruby warnings enabled (any warning fails the run), 100% line and branch coverage and no real network access; the
+original spec suite of `main`; RuboCop with every cop enabled; Sorbet at `typed: strict`; YARD (100% documented);
+Reek, Flay, Flog and Debride; bundler-audit; mutation testing (every mutation must be killed); and the linters of
+the workflows, shell scripts, YAML, Markdown, TOML, spelling, EditorConfig and secrets. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the complete list of gates.
 
 ## Usage
 

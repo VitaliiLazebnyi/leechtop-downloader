@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+# Copyright (c) 2026 Vitalii Lazebnyi
 
 # Runs the ORIGINAL spec files of this gem (as they were on `main` before the hardening pass) against the
 # current `lib/`, to prove that the public behavior did not change. Every example of the original suite must
@@ -30,70 +32,91 @@ abort 'tar failed' unless status.success?
 # load a second time, redefining their constants.
 File.symlink(File.join(root, 'lib'), File.join(work, 'lib'))
 
-# Applies +edits+ (pairs of original text and replacement) to a file of the original suite; every original
-# text must still be present, so that an edit can never silently stop applying.
-def adapt(path, edits)
-  text = File.read(path)
-  edits.each do |before, after|
-    abort "#{path} no longer contains:\n#{before}" unless text.include?(before)
+# Edits the files of the original suite.
+module LegacySuite
+  # Applies +edits+ (pairs of original text and replacement) to a file of the original suite; every original
+  # text must still be present, so that an edit can never silently stop applying.
+  # @param path [String]
+  # @param edits [Array<Array(String, String)>]
+  # @return [void]
+  def self.adapt(path, edits)
+    text = File.read(path)
+    edits.each do |before, after|
+      abort("#{path} no longer contains:\n#{before}") unless text.include?(before)
 
-    text = text.gsub(before, after)
+      text = text.gsub(before, after)
+    end
+    File.write(path, text)
   end
-  File.write(path, text)
 end
 
 # 1. SimpleCov: the original spec_helper calls `add_filter`, which the current SimpleCov renamed to `skip`
 #    (the old name prints a DEPRECATION notice on every run), and enforces a 100% coverage floor on the
 #    files the original suite loads. Coverage is enforced by this release's own suite, so here the floor is
 #    dropped and only the rename is applied.
-adapt(File.join(work, 'spec', 'spec_helper.rb'), [
-        %w[add_filter skip],
-        ['minimum_coverage line: 100, branch: 100', 'minimum_coverage line: 0, branch: 0']
-      ])
+LegacySuite.adapt(
+  File.join(work, 'spec', 'spec_helper.rb'),
+  [
+    %w[add_filter skip],
+    ['minimum_coverage line: 100, branch: 100', 'minimum_coverage line: 0, branch: 0']
+  ]
+)
 
 cli_spec = File.join(work, 'spec', 'leechtop_downloader', 'cli_spec.rb')
-adapt(cli_spec, [
-        # 2. The mojibake repair moved from the CLI instance (where it was a public method only because a
-        #    helper module was mixed in) to LeechtopDownloader::Filename; the inputs and expected outputs of
-        #    its four examples are unchanged.
-        ['cli.fix_encoding(', 'LeechtopDownloader::Filename.repair_encoding('],
-        # 3. The links-file example stubs two internals that changed: the private CLI#process_url (the CLI
-        #    now hands every URL to a Downloader built from its options) and File.readlines(path,
-        #    chomp: true) (the file is now read as UTF-8 explicitly, replacing the global Encoding settings
-        #    of the executable, which Ruby warns about). The example still checks that exactly the two
-        #    non-empty lines are processed, with the default options.
-        ['allow(File).to receive(:readlines).with(file_path, chomp: true)',
-         'allow(File).to receive(:readlines).with(file_path, chomp: true, encoding: Encoding::UTF_8)'],
-        ['allow(cli).to receive(:process_url)', <<~RUBY.strip],
-          downloader = LeechtopDownloader::Downloader.new(skip_existing: true, destination: '.')
-                  allow(LeechtopDownloader::Downloader).to receive(:new).with(skip_existing: true, destination: '.')
-                    .and_return(downloader)
-                  allow(downloader).to receive(:process)
-        RUBY
-        ["expect(cli).to have_received(:process_url).with(first_url, skip_existing: true, destination: '.')",
-         'expect(downloader).to have_received(:process).with(first_url)'],
-        ["expect(cli).to have_received(:process_url).with(second_url, skip_existing: true, destination: '.')",
-         'expect(downloader).to have_received(:process).with(second_url)'],
-        ['expect(cli).to have_received(:process_url).exactly(2).times',
-         'expect(downloader).to have_received(:process).exactly(2).times']
-      ])
+LegacySuite.adapt(
+  cli_spec,
+  [
+    # 2. The mojibake repair moved from the CLI instance (where it was a public method only because a
+    #    helper module was mixed in) to LeechtopDownloader::Filename; the inputs and expected outputs of
+    #    its four examples are unchanged.
+    ['cli.fix_encoding(', 'LeechtopDownloader::Filename.repair_encoding('],
+    # 3. The links-file example stubs two internals that changed: the private CLI#process_url (the CLI
+    #    now hands every URL to a Downloader built from its options) and File.readlines(path,
+    #    chomp: true) (the file is now read line by line with File.foreach, as UTF-8 explicitly, replacing
+    #    the global Encoding settings of the executable, which Ruby warns about). The example still checks
+    #    that exactly the two non-empty lines are processed, with the default options.
+    [
+      'allow(File).to receive(:readlines).with(file_path, chomp: true)',
+      'allow(File).to receive(:foreach).with(file_path, chomp: true, encoding: Encoding::UTF_8)'
+    ],
+    ['allow(cli).to receive(:process_url)', <<~RUBY.strip],
+      downloader = LeechtopDownloader::Downloader.new(skip_existing: true, destination: '.')
+              allow(LeechtopDownloader::Downloader).to receive(:new).with(skip_existing: true, destination: '.')
+                .and_return(downloader)
+              allow(downloader).to receive(:process)
+    RUBY
+    [
+      "expect(cli).to have_received(:process_url).with(first_url, skip_existing: true, destination: '.')",
+      'expect(downloader).to have_received(:process).with(first_url)'
+    ],
+    [
+      "expect(cli).to have_received(:process_url).with(second_url, skip_existing: true, destination: '.')",
+      'expect(downloader).to have_received(:process).with(second_url)'
+    ],
+    [
+      'expect(cli).to have_received(:process_url).exactly(2).times',
+      'expect(downloader).to have_received(:process).exactly(2).times'
+    ]
+  ]
+)
 
 # 4. Like this release's spec_helper, every Sorbet signature is evaluated once the code is loaded: an example
 #    that stubs a method whose signature was never evaluated makes sorbet-runtime drop it with a warning.
 File.write(File.join(work, 'spec', 'evaluate_signatures.rb'), "T::Utils.run_all_sig_blocks\n")
 
 result = File.join(work, 'result.json')
-ENV['BUNDLE_GEMFILE'] = File.join(root, 'Gemfile')
+rspec = %W[bundle exec rspec --options #{File::NULL} -I spec -r spec_helper -r evaluate_signatures]
+rspec.concat(['--format', 'json', '--out', result], Dir.glob('spec/**/*_spec.rb', base: work))
 # The per-example JSON result is judged, not the exit code.
-system('bundle', 'exec', 'rspec', '--options', File::NULL, '-I', 'spec',
-       '-r', 'spec_helper', '-r', 'evaluate_signatures', '--format', 'json', '--out', result,
-       *Dir.glob('spec/**/*_spec.rb', base: work),
-       chdir: work, out: File::NULL)
+system({ 'BUNDLE_GEMFILE' => File.join(root, 'Gemfile') }, *rspec, chdir: work, out: File::NULL)
 
 report = JSON.parse(File.read(result))
-failed = report.fetch('examples').filter_map do |example|
-  "#{example.fetch('full_description')}: #{example.dig('exception', 'message')}" if example.fetch('status') == 'failed'
-end
+failed =
+  report.fetch('examples').filter_map do |example|
+    next unless example.fetch('status') == 'failed'
+
+    "#{example.fetch('full_description')}: #{example.dig('exception', 'message')}"
+  end
 count = report.dig('summary', 'example_count')
 puts "Original suite: #{count} examples, #{failed.size} failing"
 failed.each { |name| warn "FAILURE: #{name}" }

@@ -25,6 +25,10 @@ GEM
     crack (1.0.1)
       bigdecimal
       rexml
+    debride (1.15.2)
+      path_expander (~> 2.0)
+      prism (~> 1.7)
+      sexp_processor (~> 4.17)
     diff-lcs (1.6.2)
     dotenv (3.2.0)
     down (5.6.2)
@@ -72,6 +76,10 @@ GEM
       path_expander (~> 2.0)
       prism (~> 1.7)
       sexp_processor (~> 4.0)
+    flog (4.9.4)
+      path_expander (~> 2.0)
+      prism (~> 1.7)
+      sexp_processor (~> 4.8)
     hashdiff (1.2.1)
     io-console (0.9.5)
     irb (1.18.0)
@@ -184,6 +192,9 @@ GEM
       kramdown-parser-gfm (~> 1.1)
       lint_roller (~> 1.1)
       rubocop (>= 1.72.1)
+    rubocop-packaging (0.6.0)
+      lint_roller (~> 1.1.0)
+      rubocop (>= 1.72.1, < 2.0)
     rubocop-performance (1.27.0)
       lint_roller (~> 1.1)
       rubocop (>= 1.89.0, < 2.0)
@@ -203,6 +214,10 @@ GEM
       lint_roller (~> 1.1)
       rubocop (~> 1.89)
       rubocop-ast (>= 1.44.0, < 2.0)
+    rubocop-yard (1.3.0)
+      lint_roller
+      rubocop (~> 1.72)
+      yard
     ruby-progressbar (1.13.0)
     rubydex (0.4.4-aarch64-linux)
     rubydex (0.4.4-arm64-darwin)
@@ -274,7 +289,9 @@ PLATFORMS
 
 DEPENDENCIES
   bundler-audit (~> 0.9)
+  debride (~> 1.15)
   flay (~> 2.14)
+  flog (~> 4.9)
   leechtop_downloader!
   mutant-rspec (~> 0.17)
   rake (~> 13.4)
@@ -282,11 +299,13 @@ DEPENDENCIES
   rspec (~> 3.13)
   rubocop (~> 1.92)
   rubocop-md (~> 3.0)
+  rubocop-packaging (~> 0.6)
   rubocop-performance (~> 1.27)
   rubocop-rake (~> 0.7)
   rubocop-rspec (~> 3.10)
   rubocop-sorbet (~> 0.17)
   rubocop-thread_safety (~> 0.8)
+  rubocop-yard (~> 1.3)
   simplecov (~> 1.3)
   sorbet (~> 0.6)
   tapioca (~> 0.20)
@@ -304,6 +323,7 @@ CHECKSUMS
   bundler-audit (0.9.3) sha256=81c8766c71e47d0d28a0f98c7eed028539f21a6ea3cd8f685eb6f42333c9b4e9
   concurrent-ruby (1.3.8) sha256=b2f1be836e968ccc78ccfce277ea79c72a88633f22306782c16ff23fb415d1e1
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
+  debride (1.15.2) sha256=5e5c50b150a37c418a7d48a2137ebb9f29d8a72fa550e626a4e1f8d418b79538
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   dotenv (3.2.0) sha256=e375b83121ea7ca4ce20f214740076129ab8514cd81378161f11c03853fe619d
   down (5.6.2) sha256=594c9f2e1749a4fecb94f32c73152c6fee8156b452f873b78eafdef802e926e5
@@ -319,6 +339,7 @@ CHECKSUMS
   faraday (2.15.1) sha256=8708154deda739c5e86cc42b74960e23e8491fce0eba9e11639a6a34b1ac288f
   faraday-net_http (3.5.0) sha256=2e7094c34e38754ee048cc3df47376f8657005d9375f8473bce1c3b526a22e36
   flay (2.14.4) sha256=a62d96a51d1da185aa41ba95b696966df9f7d1d91a457709277f24515895de77
+  flog (4.9.4) sha256=12cc054fab7a2cbd2a906514397c4d7788954d530564782d6f14939dc2dfbcbb
   hashdiff (1.2.1) sha256=9c079dbc513dfc8833ab59c0c2d8f230fa28499cc5efb4b8dd276cf931457cd1
   io-console (0.9.5) sha256=83dd9bbf4c4680416629245b39cd4212eb5f4d9a4ea91804870c1f6b846414d5
   irb (1.18.0) sha256=de9454a0703a54704b9811a5ef31a60c86949fbf4013fcf244fabc7c775248e3
@@ -366,11 +387,13 @@ CHECKSUMS
   rubocop (1.92.2) sha256=14fb31eed143a0dc6f78186c550c1715e81cd38f59d05d1165050e445c1f5382
   rubocop-ast (1.50.0) sha256=b9ca88300da0803ee222ad20cdb30494c0a784eed06fdc35d254b06d662788db
   rubocop-md (3.0.0) sha256=d2e43f9af97268a1204a0e071ef541a47d6cdd43717b7511a3c0471b785bddb1
+  rubocop-packaging (0.6.0) sha256=fb92bd0fb48e6f8cdb1648d2249b0cd51c2497dcc87340132d22f01edbf558a7
   rubocop-performance (1.27.0) sha256=eeeb1374d062a368ee1c787b70eb0b0cc4b184cb1f8565f424760946146d61ce
   rubocop-rake (0.7.1) sha256=3797f2b6810c3e9df7376c26d5f44f3475eda59eb1adc38e6f62ecf027cbae4d
   rubocop-rspec (3.10.2) sha256=0b3e2ecc592cd10ecbf0095bb58d1e357905276e069643523cc19eb7495f65e2
   rubocop-sorbet (0.17.2) sha256=0d34ae2f268c7d36d39102bdafdbbec4bc9a65bedac6cc3732a20692dbe96558
   rubocop-thread_safety (0.8.0) sha256=71fe5e7894fb9acfbd4c2dcd394feabc35bd690f75b0bc846e1504d9e31f9034
+  rubocop-yard (1.3.0) sha256=29bc44274e0b10d7db60655e84089328c0aceadd246d24f8e963c67949a60269
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
   rubydex (0.4.4-aarch64-linux) sha256=3638b08b7d683f264eb3215e86974c0f2458c7d63e4aab0c772d625e9e0392ea
   rubydex (0.4.4-arm64-darwin) sha256=e593b7a2b820e3d91ba3d6b7371916efe7c742b75d44f6eaa39cd04546211c09

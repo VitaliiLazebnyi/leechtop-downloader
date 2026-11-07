@@ -1,120 +1,164 @@
-# Maximum-strictness configuration. Every cop is run in "fail the build" mode.
-# New code has no exclusions: fix the code. A cop that cannot apply to a file is configured narrowly
-# below, with the reason. Inline RuboCop directives are forbidden (see
-# Style/DisableCopsWithinSourceCodeDirective), and there is no todo file.
-plugins:
-  - rubocop-md
-  - rubocop-performance
-  - rubocop-rake
-  - rubocop-rspec
-  - rubocop-sorbet
-  - rubocop-thread_safety
-
+---
+# Maximum-strictness configuration: EVERY cop of RuboCop and of every plugin that applies to this gem is enabled
+# (`EnabledByDefault: true`), including the ones RuboCop ships disabled, and every one fails the build.
+# New code has no exclusions: fix the code. The few cops that are switched off or narrowed below each state why
+# they cannot apply. Inline RuboCop directives are forbidden (Style/DisableCopsWithinSourceCodeDirective and
+# script/forbidden_suppressions.sh), and there is no todo file. Keys are sorted alphabetically (yamllint
+# key-ordering), so `plugins` comes last.
 AllCops:
+  EnabledByDefault: true
+  Exclude:
+    - .mutant/**/*
+    - .yardoc/**/*
+    - coverage/**/*
+    - doc/**/*
+    - sorbet/**/*
+    - tmp/**/*
+    - tools/node_modules/**/*
+    - vendor/**/*
+  # The executables have no .rb extension; RuboCop only finds them through their shebang when they are listed.
+  Include:
+    - '**/*.gemspec'
+    - '**/*.md'
+    - '**/*.rb'
+    - '**/Gemfile'
+    - '**/Rakefile'
+    - exe/*
+    - script/scorecard_check
   NewCops: enable
   SuggestExtensions: false
   TargetRubyVersion: 3.3
-  Exclude:
-    - 'vendor/**/*'
-    - 'coverage/**/*'
-    - 'sorbet/**/*'
-    - 'tmp/**/*'
-    - 'doc/**/*'
-    - '.yardoc/**/*'
-    - '.mutant/**/*'
-  # The executable has no .rb extension; RuboCop only finds it through its shebang when it is listed.
-  Include:
-    - '**/*.rb'
-    - '**/*.gemspec'
-    - '**/Gemfile'
-    - '**/Rakefile'
-    - '**/*.md'
-    - 'exe/*'
-    - 'script/scorecard_check'
-
-# --- Optional (disabled-by-default) cops that make sense for this codebase ---
-Layout/ClassStructure:
-  Enabled: true
-Layout/EmptyLineAfterMultilineCondition:
-  Enabled: true
-Layout/LineLength:
-  Max: 120
-Lint/NumberConversion:
-  Enabled: true
-Naming/InclusiveLanguage:
-  Enabled: true
-Performance/ChainArrayAllocation:
-  Enabled: true
-Lint/RedundantCopDisableDirective:
-  Enabled: true
-Sorbet/ForbidTUnsafe:
-  Enabled: true
-Style/ConstantVisibility:
-  Enabled: true
-Style/DisableCopsWithinSourceCodeDirective:
-  Enabled: true
-# Style/DocumentationMethod is intentionally NOT enabled: it requires the comment to sit
-# directly above `def`, but Sorbet's `sig { ... }` must sit between them. Documentation
-# completeness is enforced instead by the YARD gate (`yard stats` must report 100%).
-Style/InvertibleUnlessCondition:
-  Enabled: true
-Style/MethodCalledOnDoEndBlock:
-  Enabled: true
-Style/RequireOrder:
-  Enabled: true
-Style/Send:
-  Enabled: true
-Style/SingleLineBlockParams:
-  Enabled: true
-Style/StringHashKeys:
-  Enabled: true
-
-# --- Documentation: a leading '# typed:' sigil is required by Sorbet and is not a comment to document
-Style/Documentation:
-  Enabled: true
 
 Gemspec/DevelopmentDependencies:
   EnforcedStyle: gemspec
 
-# --- Sorbet: strictest sigils that are reachable ---
-# lib/ and exe/ are `typed: strict`. `typed: strong` is unreachable: the RBIs of Thor, Faraday, Nokogiri
-# and Down type most of their methods as T.untyped, and strong forbids calling any of them.
-Sorbet/StrictSigil:
-  Enabled: true
-  Include:
-    - 'lib/**/*.rb'
-    - 'exe/*'
-Sorbet/EnforceSigilOrder:
-  Enabled: true
-Sorbet/EnforceSignatures:
-  Enabled: true
-  Include:
-    - 'lib/**/*.rb'
+# Continuation lines are indented by a fixed step instead of being aligned with a column of the previous line, so
+# that every indentation is a multiple of the EditorConfig indent_size (editorconfig-checker).
+Layout/ArgumentAlignment:
+  EnforcedStyle: with_fixed_indentation
+Layout/ArrayAlignment:
+  EnforcedStyle: with_fixed_indentation
+Layout/LineEndStringConcatenationIndentation:
+  EnforcedStyle: indented
 
-Naming/FileName:
-  Exclude:
-    - '**/*.md'
-Style/OneClassPerFile:
-  Exclude:
-    - '**/*.md'
+Layout/LineLength:
+  Max: 120
 
-# rubocop-md: README snippets are illustrative, not standalone programs.
-Style/FrozenStringLiteralComment:
-  Exclude:
-    - '**/*.md'
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+Layout/ParameterAlignment:
+  EnforcedStyle: with_fixed_indentation
+
+# Requires every constant to be written fully qualified (`::LeechtopDownloader::Client`). Mutant mutates every
+# qualified constant into its unqualified name (Mutant::Mutator::Node::Const emits `Foo` for `::Foo`), which
+# resolves to the same constant: every such reference would become an equivalent mutation that no test can
+# kill, and the mutation gate requires every mutation to be killed. Constant resolution itself is verified
+# statically by Sorbet (`typed: strict`), which reports every constant that does not resolve.
+Lint/ConstantResolution:
+  Enabled: false
 
 # Sorbet signatures name every parameter, including the block, so anonymous block forwarding (`&`)
 # cannot be used in typed code.
 Naming/BlockForwarding:
   EnforcedStyle: explicit
 
+# The Markdown files are prose; their Ruby snippets are illustrative, not standalone source files.
+Naming/FileName:
+  Exclude:
+    - '**/*.md'
+
 # Reek (UncommunicativeVariableName) rejects one-letter names such as the default `e`.
 Naming/RescuedExceptionsVariableName:
   PreferredName: error
+
+Sorbet/EnforceSignatures:
+  Include:
+    - exe/*
+    - lib/**/*.rb
+
+Sorbet/FalseSigil:
+  Exclude:
+    - '**/*.md'
+
+# These cops forbid Sorbet itself (`sig`, `extend T::Sig`, `T.let`, `T::Struct`) for code bases that are
+# moving away from it. This gem is typed with Sorbet: `typed: strict` requires `sig` on every method and
+# `T.let` on every constant and instance variable, and T::Struct checks the type of every field at runtime,
+# which a plain class would not.
+Sorbet/ForbidSig:
+  Enabled: false
+Sorbet/ForbidTLet:
+  Enabled: false
+Sorbet/ForbidTSig:
+  Enabled: false
+Sorbet/ForbidTStruct:
+  Enabled: false
+
+Sorbet/HasSigil:
+  Exclude:
+    - '**/*.md'
+
+# Expects `T::Sig` to be mixed into every Module of the process (a global monkey patch). A gem must not
+# change Module for the applications that load it, so every class extends T::Sig itself.
+Sorbet/RedundantExtendTSig:
+  Enabled: false
+
+Sorbet/StrictSigil:
+  Include:
+    - exe/*
+    - lib/**/*.rb
+
+# `typed: strong` is unreachable: the RBIs of Thor, Faraday, Nokogiri and Down type most of their methods as
+# T.untyped, and strong forbids calling any of them. lib/ and exe/ are `typed: strict` (Sorbet/StrictSigil).
+Sorbet/StrongSigil:
+  Enabled: false
+
+# Spec files run inside RSpec's DSL (`describe`, `it`, `let`, `expect`), whose blocks are evaluated on objects
+# Sorbet cannot see: at `typed: true` every DSL call is an error (1023 errors). The scripts are `typed: true`.
+Sorbet/TrueSigil:
+  Exclude:
+    - spec/**/*
+
+Style/Copyright:
+  AutocorrectNotice: '# Copyright (c) 2026 Vitalii Lazebnyi'
+  Exclude:
+    - '**/*.md'
+  Notice: ^Copyright \(c\) 2026 Vitalii Lazebnyi$
+
+# Requires the documentation comment directly above `def`, while Sorbet/EmptyLineAfterSig requires the `sig`
+# directly above `def` with nothing in between: the two cannot both hold for a method with a signature.
+# Documentation is enforced instead by the YARD gate (`rake yard`: 100% documented, no warnings).
+Style/DocumentationMethod:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Exclude:
+    - '**/*.md'
+
+# Neither style can apply. The cop cannot see the type of the receiver: its `fetch` style flags every `[]` call,
+# including Sorbet's generic type syntax (`T::Array[String]` in signatures), Nokogiri's attribute reader
+# (`node['href']`) and `Dir[...]`, none of which has a `fetch`. Its `brackets` style would replace the code's
+# Hash#fetch calls, which raise on a missing key, with Hash#[], which silently returns nil.
+Style/HashLookupMethod:
+  Enabled: false
+
+Style/OneClassPerFile:
+  Exclude:
+    - '**/*.md'
 
 # Every example runs in its own empty working directory (spec/spec_helper.rb), because the CLI downloads into
 # the current directory by default and must never write into the repository. The suite runs in one thread
 # (mutant forks processes, it does not start threads), so the process-wide effect of Dir.chdir is intended.
 ThreadSafety/DirChdir:
   Exclude:
-    - 'spec/spec_helper.rb'
+    - spec/spec_helper.rb
+
+plugins:
+  - rubocop-md
+  - rubocop-packaging
+  - rubocop-performance
+  - rubocop-rake
+  - rubocop-rspec
+  - rubocop-sorbet
+  - rubocop-thread_safety
+  - rubocop-yard
+...

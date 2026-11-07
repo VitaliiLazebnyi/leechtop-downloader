@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+# Copyright (c) 2026 Vitalii Lazebnyi
 
 # Fails when a dependency is not at its newest release and script/outdated_holds.yml does not list it, or when a
 # listed hold is no longer needed. Checks the gems of the bundle (`bundle outdated`), RubyGems and Bundler
@@ -41,14 +43,15 @@ end
 
 # Jobs held on an older Ruby: still needed while a listed file requires parser/current, and pinned in the workflow.
 holds.fetch('ruby').each do |job, hold|
-  still_blocked = hold.fetch('blocked_by').any? do |entry|
-    gem_name, file = entry.split(':').then { |(gem_part, path)| [gem_part.split.first, path.strip] }
-    spec = Gem::Specification.find_by_name(gem_name)
-    File.read(File.join(spec.full_gem_path, file)).include?('parser/current')
-  end
+  still_blocked =
+    hold.fetch('blocked_by').any? do |entry|
+      gem_name, file = entry.split(':').then { |(gem_part, path)| [gem_part.split.first, path.strip] }
+      spec = Gem::Specification.find_by_name(gem_name)
+      File.read(File.join(spec.full_gem_path, file)).include?('parser/current')
+    end
   problems << "STALE RUBY HOLD (no longer needed): #{job}" unless still_blocked
   workflow = File.read(File.join(root, hold.fetch('workflow')))
-  unless workflow.include?(%(ruby-version: "#{hold.fetch('ruby')}"))
+  unless workflow.include?("ruby-version: #{hold.fetch('ruby')}\n")
     problems << "#{hold.fetch('workflow')} does not run #{job} on the held Ruby #{hold.fetch('ruby')}"
   end
   puts "held: #{job} runs on Ruby #{hold.fetch('ruby')}"

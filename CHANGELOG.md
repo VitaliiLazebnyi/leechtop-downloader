@@ -24,5 +24,13 @@
 - `Gemfile.lock` is committed, so CI checks the exact bundle the Sorbet RBIs were generated from.
 - The locked bundle, RubyGems and Bundler (4.0.24), the GitHub Actions and the CI tools are at their newest releases
   (2026-11-07), including the rubocop-md 3.0 development dependency.
+- Failures to find the download button, its tokens, the nonce or the direct link raise
+  `LeechtopDownloader::Client::ExtractionError` (a `LeechtopDownloader::Error`) instead of a bare `RuntimeError`;
+  `Client.download` still reports them as a `DownloadError` with the same message.
+- Every check runs at its strictest setting: every RuboCop cop, Flog and Debride, every Ruby command with `-w`,
+  and linters for every other file type (ShellCheck with every optional check, shfmt, yamllint, markdownlint,
+  Taplo, typos, editorconfig-checker, actionlint, zizmor's pedantic persona and gitleaks), at pinned versions
+  (`tools/`). `script/check` runs every check of CI locally. Every CI job runs behind Harden-Runner, with the
+  network limited to the endpoints it needs.
 - The internals of the CLI moved into `LeechtopDownloader::Downloader`, `AppLock`, `DownloadLock` and `Filename`;
   `LeechtopDownloader::CLIHelpers` was removed.

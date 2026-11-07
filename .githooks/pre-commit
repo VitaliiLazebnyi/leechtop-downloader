@@ -1,38 +1,22 @@
 #!/usr/bin/env bash
-# Pre-commit hook: runs the fast gates (LT-REQ-008). It uses `bundle exec` only, never a version-manager
-# prefix, so it works with any Ruby installation.
+# Pre-commit hook: runs the fast gates (LT-REQ-008) with every Ruby warning enabled. It uses `bundle exec` only,
+# never a version-manager prefix, so it works with any Ruby installation. script/check runs every check of CI.
 # Install: git config core.hooksPath .githooks
 set -euo pipefail
 
-echo "==> Checking for inline suppressions..."
-script/forbidden_suppressions.sh
+root="$(git rev-parse --show-toplevel)"
+cd "${root}"
+RUBYOPT="-w -W:deprecated -W:performance -r${root}/script/upstream_warnings.rb"
+export RUBYOPT
 
-echo "==> Running RSpec (100% line and branch coverage, warnings are errors)..."
+echo "==> RSpec (100% line and branch coverage, warnings are errors)"
 bundle exec rspec --format progress
 
-echo "==> Running RuboCop..."
-bundle exec rubocop
+echo "==> RuboCop, suppressions, Sorbet, YARD, Reek, Flay, Flog and Debride"
+bundle exec rake rubocop suppressions typecheck yard reek flay flog debride
 
-echo "==> Running Sorbet (verifying the gem RBIs first)..."
-bundle exec rake typecheck
-
-echo "==> Running Reek, Flay and YARD..."
-bundle exec rake reek flay yard
-
-# Optional tools that are not Ruby gems: each one runs when it is installed (CI always runs them).
-for tool in typos actionlint; do
-  if command -v "$tool" > /dev/null; then
-    echo "==> Running ${tool}..."
-    "$tool"
-  fi
-done
-if command -v shellcheck > /dev/null; then
-  echo "==> Running ShellCheck..."
-  shellcheck script/*.sh .githooks/pre-commit
-fi
-if command -v markdownlint-cli2 > /dev/null; then
-  echo "==> Running markdownlint..."
-  markdownlint-cli2 '**/*.md'
-fi
+echo "==> Linters and scanners of the other files"
+script/install_tools.sh >/dev/null
+script/lint.sh
 
 echo "==> All checks passed."
