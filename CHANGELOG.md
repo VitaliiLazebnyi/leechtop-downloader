@@ -22,5 +22,7 @@
 - Pull requests fail on any added dependency whose OpenSSF Scorecard is below 3, except for the per-package
   allowances (with their reasons) in `.github/dependency-review.yml`.
 - `Gemfile.lock` is committed, so CI checks the exact bundle the Sorbet RBIs were generated from.
+- The locked bundle, RubyGems and Bundler (4.0.24), the GitHub Actions and the CI tools are at their newest releases
+  (2026-11-07), including the rubocop-md 3.0 development dependency.
 - The internals of the CLI moved into `LeechtopDownloader::Downloader`, `AppLock`, `DownloadLock` and `Filename`;
   `LeechtopDownloader::CLIHelpers` was removed.

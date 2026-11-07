@@ -17,6 +17,6 @@ scorecard-allowances:
     version: 1.13.0
     score: 2.8
     reason: >-
-      RuboCop (a development-only gate) requires it unconditionally (rubocop 1.92.1: ruby-progressbar ~> 1.7),
+      RuboCop (a development-only gate) requires it unconditionally (rubocop 1.92.2: ruby-progressbar ~> 1.7),
       so it cannot be dropped or replaced while RuboCop runs. It is never loaded by the gem itself and not
       installed for users of leechtop_downloader.
