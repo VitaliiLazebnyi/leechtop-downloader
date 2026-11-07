@@ -24,3 +24,4 @@ None.
 - **BUG-LT-006 (Ruby Warnings from the Executable):** `exe/leechtop` assigned `Encoding.default_external` and
   `Encoding.default_internal` at runtime, which Ruby reports as a warning. The only input it affected, the text file of
   links, is now read as UTF-8 explicitly.
+
