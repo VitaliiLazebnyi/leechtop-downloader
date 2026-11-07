@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+# Copyright (c) 2026 Vitalii Lazebnyi
+
 require 'digest'
 require 'fileutils'
 require 'sorbet-runtime'
@@ -58,7 +60,7 @@ module LeechtopDownloader
     sig { void }
     def report_busy
       name = filename.empty? ? 'File' : "File #{filename}"
-      puts "#{name} is currently being downloaded by another process. Skipping."
+      puts("#{name} is currently being downloaded by another process. Skipping.")
     end
   end
 end

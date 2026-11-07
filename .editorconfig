@@ -3,10 +3,15 @@ root = true
 [*]
 charset = utf-8
 end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
-indent_style = space
 indent_size = 2
+indent_style = space
+insert_final_newline = true
+max_line_length = 120
+trim_trailing_whitespace = true
 
 [*.md]
 trim_trailing_whitespace = false
+
+# Generated files, written by Bundler, npm, pip-compile and Tapioca: their line lengths are the generators'.
+[{Gemfile.lock,tools/package-lock.json,tools/requirements.txt,sorbet/rbi/**}]
+max_line_length = off

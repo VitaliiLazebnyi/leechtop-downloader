@@ -1,16 +1,15 @@
-usage: opensource
-integration:
-  name: rspec
-requires:
-  - leechtop_downloader
+---
+coverage_criteria:
+  process_abort: true
 includes:
   - lib
   - spec
+integration:
+  name: rspec
 matcher:
   subjects:
     - LeechtopDownloader*
 mutation:
-  timeout: 20.0
   # Mutations that cannot change observable behavior. Each pattern is matched against the node being
   # mutated, so it also hides the other mutations of that node. Every entry states why the mutation is
   # equivalent.
@@ -19,5 +18,8 @@ mutation:
     # method is called with the wrong types); mutating the signature DSL itself only produces Sorbet
     # runtime errors that the examples of the method already surface.
     - block{receiver=send{selector=sig}}
-coverage_criteria:
-  process_abort: true
+  timeout: 20.0
+requires:
+  - leechtop_downloader
+usage: opensource
+...

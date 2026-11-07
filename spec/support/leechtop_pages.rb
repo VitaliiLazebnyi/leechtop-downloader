@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Copyright (c) 2026 Vitalii Lazebnyi
+
 require 'json'
 require 'uri'
 

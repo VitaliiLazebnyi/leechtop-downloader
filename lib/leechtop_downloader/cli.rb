@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+# Copyright (c) 2026 Vitalii Lazebnyi
+
 require 'sorbet-runtime'
 require 'thor'
 
@@ -25,8 +27,10 @@ module LeechtopDownloader
     sig { params(urls: String).void }
     def download(*urls)
       report_missing_urls if urls.empty?
-      downloader = Downloader.new(skip_existing: options.fetch(:skip_existing, true),
-                                  destination: options.fetch(:destination, '.'))
+      downloader = Downloader.new(
+        skip_existing: options.fetch(:skip_existing, true),
+        destination: options.fetch(:destination, '.')
+      )
       AppLock.hold { urls.each { |arg| downloader.process_argument(arg) } }
     end
 
@@ -35,8 +39,8 @@ module LeechtopDownloader
     # Prints the usage error of a download without URLs and exits with status 1.
     sig { returns(T.noreturn) }
     def report_missing_urls
-      puts 'Error: You must provide at least one URL or file path.'
-      exit 1
+      puts('Error: You must provide at least one URL or file path.')
+      exit(1)
     end
   end
 end

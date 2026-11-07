@@ -1,11 +1,20 @@
-# markdownlint with its default rules, except:
+---
+# markdownlint-cli2 (https://github.com/DavidAnson/markdownlint-cli2): every rule is enabled, with no inline
+# disable comments (script/forbidden_suppressions.sh).
 config:
-  # Prose wraps at 120 columns, the line length RuboCop enforces for the code. Tables cannot be wrapped.
+  # Prose, tables and code blocks wrap at 120 columns, the line length RuboCop enforces for the code.
   MD013:
+    code_blocks: true
     line_length: 120
-    tables: false
+    tables: true
+  default: true
+globs:
+  - '**/*.md'
 ignores:
-  - 'tmp/**'
-  - 'coverage/**'
-  - 'doc/**'
-  - 'vendor/**'
+  - .yardoc/**
+  - coverage/**
+  - doc/**
+  - tmp/**
+  - tools/node_modules/**
+  - vendor/**
+...

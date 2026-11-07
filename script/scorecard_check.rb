@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+# Copyright (c) 2026 Vitalii Lazebnyi
 
 # Checks the OpenSSF Scorecard of every dependency a pull request adds, like dependency-review-action does,
 # but with explicit per-package allowances. The action can only lower its threshold for every package at once,
@@ -25,8 +27,32 @@ module ScorecardCheck
   DEPS_DEV_API = 'https://api.deps.dev/v3/systems/'
   public_constant :ROOT, :CONFIG, :SCORECARD_API, :DEPS_DEV_API
 
+  # The lockfile whose gem versions the allowances name.
+  LOCKFILE = File.join(ROOT, 'Gemfile.lock')
+  public_constant :LOCKFILE
+
   # One added dependency and its score.
-  Result = Struct.new(:package, :version, :score, keyword_init: true)
+  Result =
+    Struct.new(:package, :version, :score) do
+      # The line printed for the dependency.
+      # @return [String]
+      def to_s
+        "#{package} #{version}: OpenSSF Scorecard #{score || 'not published'}"
+      end
+
+      # The problem of the dependency when it scores below the threshold and no allowance covers it.
+      # @param threshold [Numeric]
+      # @param allowance [Hash, nil] the allowance of the package, if there is one
+      # @return [String, nil]
+      def problem(threshold, allowance)
+        scored = score
+        return unless scored && scored < threshold
+        return if allowance && allowance.fetch(:version) == version && scored >= allowance.fetch(:score)
+
+        "#{package} #{version} has an OpenSSF Scorecard of #{scored}, below #{threshold}, " \
+          'and no allowance in .github/dependency-review.yml covers it'
+      end
+    end
   public_constant :Result
 
   module_function
@@ -35,11 +61,16 @@ module ScorecardCheck
   # @param changes_json [String] empty when the pull request changes no dependency (the action then sets no output)
   # @return [Integer] the exit status: 0 when the check passes
   def main(changes_json)
-    found = problems(changes_json.empty? ? [] : JSON.parse(changes_json, symbolize_names: true),
-                     YAML.safe_load_file(CONFIG, symbolize_names: true),
-                     File.read(File.join(ROOT, 'Gemfile.lock')))
-    found.each { |problem| puts "::error::#{problem}" }
+    found = problems(parse(changes_json), YAML.safe_load_file(CONFIG, symbolize_names: true), File.read(LOCKFILE))
+    found.each { |problem| $stdout.puts("::error::#{problem}") }
     found.empty? ? 0 : 1
+  end
+
+  # The dependency changes of the `dependency-changes` JSON.
+  # @param changes_json [String] empty when the pull request changes no dependency
+  # @return [Array<Hash>]
+  def parse(changes_json)
+    changes_json.empty? ? [] : JSON.parse(changes_json, symbolize_names: true)
   end
 
   # Runs the check and returns the problems it found (an empty list when it passes).
@@ -50,10 +81,16 @@ module ScorecardCheck
   def problems(changes, config, lockfile)
     allowances = config.fetch(:'scorecard-allowances', {})
     threshold = config.fetch(:'warn-on-openssf-scorecard-level')
-    results = changes.filter_map { |change| result(change) if change.fetch(:change_type) == 'added' }
-    results.each { |entry| puts describe(entry) }
-    results.filter_map { |entry| below_threshold(entry, threshold, allowances) } +
+    added(changes).filter_map { |entry| entry.problem(threshold, allowances[entry.package.to_sym]) } +
       stale_allowances(allowances, lockfile)
+  end
+
+  # The added dependencies with their scores, each printed.
+  # @param changes [Array<Hash>] the `dependency-changes` output of dependency-review-action
+  # @return [Array<Result>]
+  def added(changes)
+    results = changes.filter_map { |change| result(change) if change.fetch(:change_type) == 'added' }
+    results.each { |entry| $stdout.puts(entry) }
   end
 
   # The package, version and score of an added dependency.
@@ -77,8 +114,10 @@ module ScorecardCheck
     return "github.com/#{name.split('/').first(2).join('/')}" if ecosystem == 'actions'
 
     # Gemspec entries name a requirement (e.g. "~> 0.9") instead of a version: encoded, deps.dev knows no such version.
-    get_json("#{DEPS_DEV_API}#{ecosystem}/packages/#{URI.encode_uri_component(name)}/versions/" \
-             "#{URI.encode_uri_component(version)}")
+    get_json(
+      "#{DEPS_DEV_API}#{ecosystem}/packages/#{URI.encode_uri_component(name)}/versions/" \
+        "#{URI.encode_uri_component(version)}"
+    )
       &.dig(:relatedProjects, 0, :projectKey, :id)
   end
 
@@ -93,31 +132,8 @@ module ScorecardCheck
   # @param url [String]
   # @return [Hash, nil]
   def get_json(url)
-    response = Net::HTTP.get_response(URI(url))
+    response = Net::HTTP.get_response(URI.parse(url))
     JSON.parse(response.body, symbolize_names: true) if response.is_a?(Net::HTTPOK)
-  end
-
-  # The line printed for an added dependency.
-  # @param entry [Result]
-  # @return [String]
-  def describe(entry)
-    "#{entry.package} #{entry.version}: OpenSSF Scorecard #{entry.score || 'not published'}"
-  end
-
-  # The problem of a dependency below the threshold that no allowance covers.
-  # @param entry [Result]
-  # @param threshold [Numeric]
-  # @param allowances [Hash]
-  # @return [String, nil]
-  def below_threshold(entry, threshold, allowances)
-    score = entry.score
-    return if score.nil? || score >= threshold
-
-    allowance = allowances[entry.package.to_sym]
-    return if allowance && allowance[:version] == entry.version && score >= allowance[:score]
-
-    "#{entry.package} #{entry.version} has an OpenSSF Scorecard of #{score}, below #{threshold}, " \
-      'and no allowance in .github/dependency-review.yml covers it'
   end
 
   # The problems of allowances that are incomplete or name a gem version Gemfile.lock no longer has.
@@ -125,14 +141,21 @@ module ScorecardCheck
   # @param lockfile [String]
   # @return [Array<String>]
   def stale_allowances(allowances, lockfile)
-    allowances.filter_map do |package, allowance|
-      ecosystem, name = package.to_s.split('/', 2)
-      version = allowance[:version]
-      if allowance[:reason].to_s.strip.empty?
-        "the allowance for #{package} gives no reason"
-      elsif ecosystem == 'rubygems' && !lockfile.include?("\n    #{name} (#{version})")
-        "the allowance for #{package} #{version} is stale: Gemfile.lock no longer has that version"
-      end
-    end
+    allowances.filter_map { |package, allowance| allowance_problem(package.to_s, allowance, lockfile) }
+  end
+
+  # The problem of one allowance: it gives no reason, or names a gem version Gemfile.lock no longer has.
+  # @param package [String] e.g. "rubygems/ruby-progressbar"
+  # @param allowance [Hash]
+  # @param lockfile [String]
+  # @return [String, nil]
+  def allowance_problem(package, allowance, lockfile)
+    return "the allowance for #{package} gives no reason" if allowance[:reason].to_s.strip.empty?
+
+    ecosystem, name = package.split('/', 2)
+    version = allowance[:version]
+    return if ecosystem != 'rubygems' || lockfile.include?("\n    #{name} (#{version})")
+
+    "the allowance for #{package} #{version} is stale: Gemfile.lock no longer has that version"
   end
 end

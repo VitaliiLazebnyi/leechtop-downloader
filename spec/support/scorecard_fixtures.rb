@@ -1,20 +1,28 @@
 # typed: false
 # frozen_string_literal: true
 
+# Copyright (c) 2026 Vitalii Lazebnyi
+
 require 'json'
 
 # Dependency changes and Scorecard API stubs for the specs of script/scorecard_check.rb.
 module ScorecardFixtures
   # A dependency change as dependency-review-action reports it.
-  def dependency_change(name, version, repository: "https://github.com/example/#{name}", type: 'added',
-                        ecosystem: 'rubygems')
+  def dependency_change(
+    name,
+    version,
+    repository: "https://github.com/example/#{name}",
+    type: 'added',
+    ecosystem: 'rubygems'
+  )
     { change_type: type, ecosystem: ecosystem, name: name, version: version, source_repository_url: repository }
   end
 
   # The problems ScorecardCheck finds in +changes+ (it prints a line per added dependency).
   def check_problems(*changes)
     result = nil
-    expect { result = ScorecardCheck.problems(changes, config, lockfile) }.to output(//).to_stdout
+    expect { result = ScorecardCheck.problems(changes, config, lockfile) }
+      .to(output(//).to_stdout)
     result
   end
 

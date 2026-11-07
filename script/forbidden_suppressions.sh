@@ -15,9 +15,9 @@ status=0
 check() {
   local description=$1 pattern=$2 scope=${3:-.}
   local hits
-  hits=$(printf '%s\n' "$files" | grep -E "^${scope}" | xargs -r grep -nEH -e "$pattern" -- || true)
-  if [ -n "$hits" ]; then
-    printf 'Forbidden (%s):\n%s\n\n' "$description" "$hits"
+  hits=$(printf '%s\n' "${files}" | grep -E "^${scope}" | xargs -r grep -nEH -e "${pattern}" -- || true)
+  if [[ -n ${hits} ]]; then
+    printf 'Forbidden (%s):\n%s\n\n' "${description}" "${hits}"
     status=1
   fi
 }
@@ -29,15 +29,24 @@ check 'mutant suppression' 'mutant:disable'
 check 'YARD exclusion' ':nodoc:|@!visibility +private|@private'
 check 'gitleaks allow' 'gitleaks:allow'
 check 'zizmor ignore' 'zizmor: ?ignore'
-check 'shellcheck disable' 'shellcheck +disable'
+check 'shellcheck directive' 'shellcheck +(disable|source=/dev/null)'
+check 'yamllint directive' 'yamllint (disable|enable)'
+check 'editorconfig-checker directive' 'editorconfig-checker-(disable|enable)'
+check 'taplo directive' 'taplo:'
+check 'hadolint directive' 'hadolint +(ignore|global)'
 check 'markdownlint directive' 'markdownlint-(disable|enable|capture|restore|configure-file)'
-check 'typos directive' 'typos: ?(ignore|off|disable)'
+check 'typos directive' 'typos: ?(ignore|off|disable)|spellchecker: ?(disable|ignore)'
 check 'LGTM/CodeQL suppression' 'lgtm\[|codeql\[|codeql-disable|lgtm: ?ignore'
 check 'nosec / noqa' 'nosec|noqa'
-check 'warning silencing' '[$]VERBOSE *= *(nil|false)|Warning\.ignore|Warning\[:[a-z_]+\] *= *false|silence_warnings|[$]stderr *= *File::NULL|RUBYOPT=[^ ]*-W0|-W0\b'
+check 'warning silencing' '[$]VERBOSE *= *(nil|false)|Warning\.ignore|Warning\[:[a-z_]+\] *= *false|silence_warnings'
+check 'warning silencing' '[$]stderr *= *File::NULL|RUBYOPT=[^ ]*-W0|-W0\b|-W:no-'
 check 'real network access in specs' 'allow_net_connect!|WebMock\.disable!' 'spec/'
-check 'skipped or focused test' '^[[:space:]]*(xit|xspecify|xexample|xdescribe|xcontext|fit|fspecify|fexample|fdescribe|fcontext|skip|pending)([[:space:]]|\()|focus: *true|, *:focus|, *(skip|pending): ' '(spec|script)/'
-check 'Sorbet escape hatch' 'T\.(unsafe|cast|bind|untyped)\b|T::Sig::WithoutRuntime|typed: *(ignore|false|true)\b' '(lib|exe)/'
-check 'Sorbet escape hatch' 'T\.unsafe\b|typed: *ignore' '(spec|script|sorbet/rbi/shims|sorbet/tapioca)'
+skipped='(xit|xspecify|xexample|xdescribe|xcontext|fit|fspecify|fexample|fdescribe|fcontext|skip|pending)'
+check 'skipped or focused test' "^[[:space:]]*${skipped}([[:space:]]|\\()" '(spec|script)/'
+check 'skipped or focused test' 'focus: *true|, *:focus|, *(skip|pending): ' '(spec|script)/'
+check 'Sorbet escape hatch' 'T\.(unsafe|cast|bind|untyped)\b|T::Sig::WithoutRuntime' '(lib|exe)/'
+check 'Sorbet sigil weaker than strict' 'typed: *(ignore|false|true)\b' '(lib|exe)/'
+check 'Sorbet escape hatch' 'T\.unsafe\b|typed: *ignore' '(spec|sorbet/rbi/shims|sorbet/tapioca)'
+check 'Sorbet sigil weaker than true' 'typed: *(false|ignore)' 'script/'
 
-exit "$status"
+exit "${status}"

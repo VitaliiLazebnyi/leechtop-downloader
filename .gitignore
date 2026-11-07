@@ -37,3 +37,6 @@ mise.toml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Linters installed by script/install_tools.sh
+/tools/node_modules/
