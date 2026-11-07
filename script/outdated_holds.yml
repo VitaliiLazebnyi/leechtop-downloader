@@ -1,5 +1,5 @@
 # Every dependency is at its newest release, except the holds below. Each one quotes the exact upstream reason
-# (checked on 2026-10-28). `rake outdated` (script/outdated.rb) fails for any other outdated dependency, and for
+# (checked on 2026-11-07). `rake outdated` (script/outdated.rb) fails for any other outdated dependency, and for
 # a hold that is no longer needed.
 
 # Gems that an upstream gemspec keeps below their newest release.
@@ -7,8 +7,8 @@ gems:
   diff-lcs:
     newest: 2.0.0
     blocked_by:
-      - 'rspec-expectations 3.13.5: diff-lcs >= 1.2.0, < 2.0'
-      - 'rspec-mocks 3.13.8: diff-lcs >= 1.2.0, < 2.0'
+      - 'rspec-expectations 3.13.6: diff-lcs >= 1.2.0, < 2.0'
+      - 'rspec-mocks 3.13.9: diff-lcs >= 1.2.0, < 2.0'
   prism:
     newest: 2.1.0
     blocked_by:

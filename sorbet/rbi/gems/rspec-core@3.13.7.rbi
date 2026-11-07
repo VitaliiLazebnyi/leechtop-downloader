@@ -3090,7 +3090,7 @@ class RSpec::Core::ExampleGroup
   private
 
   # pkg:gem/rspec-core#lib/rspec/core/example_group.rb:765
-  def method_missing(name, *args, **_arg2); end
+  def method_missing(name, *args, **); end
 
   class << self
     # Adds an example to the example group
@@ -3915,9 +3915,6 @@ module RSpec::Core::FlatMap
   def flat_map(array, &block); end
 
   class << self
-    # for 1.8.7
-    # :nocov:
-    #
     # pkg:gem/rspec-core#lib/rspec/core/flat_map.rb:17
     def flat_map(array, &block); end
   end
@@ -4615,7 +4612,7 @@ end
 module RSpec::Core::Formatters::ExceptionPresenter::Factory::EmptyBacktraceFormatter
   class << self
     # pkg:gem/rspec-core#lib/rspec/core/formatters/exception_presenter.rb:418
-    def format_backtrace(*_arg0); end
+    def format_backtrace(*); end
   end
 end
 
@@ -6299,7 +6296,7 @@ module RSpec::Core::MemoizedHelpers
   # @private
   #
   # pkg:gem/rspec-core#lib/rspec/core/memoized_helpers.rb:135
-  def initialize(*_arg0); end
+  def initialize(*); end
 
   # Wraps the `subject` in `expect` to make it the target of an expectation.
   # Designed to read nicely for one-liners.
@@ -6440,13 +6437,6 @@ module RSpec::Core::MemoizedHelpers
     # pkg:gem/rspec-core#lib/rspec/core/memoized_helpers.rb:542
     def define_helpers_on(example_group); end
 
-    # for 1.8
-    # @private
-    #
-    # Gets the named constant or yields.
-    # On 1.8, const_defined? / const_get do not take into
-    # account the inheritance hierarchy.
-    # :nocov:
     # @private
     #
     # Gets the named constant or yields.
@@ -6455,6 +6445,13 @@ module RSpec::Core::MemoizedHelpers
     # disable this behavior. It's important that we don't
     # consider inheritance here; each example group level that
     # uses a `let` should get its own `LetDefinitions` module.
+    # for 1.8
+    # @private
+    #
+    # Gets the named constant or yields.
+    # On 1.8, const_defined? / const_get do not take into
+    # account the inheritance hierarchy.
+    # :nocov:
     #
     # pkg:gem/rspec-core#lib/rspec/core/memoized_helpers.rb:570
     def get_constant_or_yield(example_group, name); end
@@ -7740,7 +7737,7 @@ class RSpec::Core::NullReporter
     private
 
     # pkg:gem/rspec-core#lib/rspec/core/reporter.rb:261
-    def method_missing(*_arg0); end
+    def method_missing(*); end
   end
 end
 
