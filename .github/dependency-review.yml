@@ -7,6 +7,78 @@ fail-on-severity: low
 # accepted at (a lower score fails again), and the reason. An allowance for a gem version Gemfile.lock no longer has
 # fails the check.
 scorecard-allowances:
+  npm/character-entities:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through decode-named-character-reference), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.5
+    version: 2.0.2
+  npm/character-entities-legacy:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through parse-entities), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.5
+    version: 3.0.0
+  npm/character-reference-invalid:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through parse-entities), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.5
+    version: 2.0.1
+  npm/debug:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through micromark), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.6
+    version: 4.4.3
+  npm/decode-named-character-reference:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through micromark), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.9
+    version: 1.3.0
+  npm/is-alphabetical:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through is-alphanumerical), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.5
+    version: 2.0.1
+  npm/is-alphanumerical:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through parse-entities), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.5
+    version: 2.0.1
+  npm/is-decimal:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through parse-entities), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.5
+    version: 2.0.1
+  npm/is-hexadecimal:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through parse-entities), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.5
+    version: 2.0.1
+  npm/is-number:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through fast-glob and to-regex-range), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.1
+    version: 7.0.0
+  npm/merge2:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through fast-glob), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.7
+    version: 1.4.1
+  npm/parse-entities:
+    reason: >-
+      A dependency of markdownlint-cli2 0.24.0 (through micromark-extension-directive), the Markdown linter of
+      script/lint.sh, which only runs in CI and script/check. It is never part of the gem.
+    score: 2.8
+    version: 4.0.2
   rubygems/flog:
     reason: >-
       The method complexity gate (`rake flog`, a development-only check) runs it; it is the only Ruby
