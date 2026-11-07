@@ -106,7 +106,7 @@ jobs:
   # The release job runs after the warning gate of the verification; this gate checks its log as well.
   release-warning-gate:
     if: ${{ !cancelled() }}
-    name: Warning gate (release)
+    name: Warning gate (Automated Release, after publishing)
     needs:
       - build_and_release
     permissions:
@@ -127,7 +127,7 @@ jobs:
         with:
           persist-credentials: false
       - env:
-          GATE_JOB_NAME: Warning gate (release)
+          GATE_JOB_NAME: Warning gate (Automated Release, after publishing)
           GH_TOKEN: ${{ github.token }}
         name: Fail on any warning or deprecation in the logs of this run
         run: script/warning_gate.sh
@@ -174,7 +174,7 @@ jobs:
 
   warning-gate:
     if: ${{ !cancelled() }}
-    name: Warning gate
+    name: Warning gate (Automated Release)
     needs:
       - verify
     permissions:
@@ -195,7 +195,7 @@ jobs:
         with:
           persist-credentials: false
       - env:
-          GATE_JOB_NAME: Warning gate
+          GATE_JOB_NAME: Warning gate (Automated Release)
           GH_TOKEN: ${{ github.token }}
         name: Fail on any warning or deprecation in the logs of this run
         run: script/warning_gate.sh

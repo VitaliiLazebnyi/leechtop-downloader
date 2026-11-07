@@ -83,8 +83,8 @@ file and message; every other warning is printed and fails the build.
   that cannot apply to a file is configured narrowly in the tool's configuration file, with the reason written
   next to it.
 - **No warnings.** Every Ruby command runs with all warnings enabled, and the specs fail on any warning. Every
-  workflow ends with a "Warning gate" job (`script/warning_gate.sh`) that fails the run when the log of any job
-  contains a warning or a deprecation notice; `script/check` applies the same check to its own output.
+  workflow ends with a "Warning gate (*workflow*)" job (`script/warning_gate.sh`) that fails the run when the log
+  of any job contains a warning or a deprecation notice; `script/check` applies the same check to its own output.
 - **Behavior is specified.** Every behavioral fix needs a regression spec, and every surviving mutant needs a test that
   kills it (or, when the mutation cannot change observable behavior, simpler code).
 - **Dependencies are current.** `rake outdated` fails for any gem, RubyGems or Bundler that is not at its newest
