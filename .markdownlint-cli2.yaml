@@ -1,0 +1,11 @@
+# markdownlint with its default rules, except:
+config:
+  # Prose wraps at 120 columns, the line length RuboCop enforces for the code. Tables cannot be wrapped.
+  MD013:
+    line_length: 120
+    tables: false
+ignores:
+  - 'tmp/**'
+  - 'coverage/**'
+  - 'doc/**'
+  - 'vendor/**'

@@ -1,0 +1,122 @@
+name: Automated Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions: {}
+
+# Ruby warnings are enabled on each step that runs code: `-w` (every warning) for this repository's code, and
+# the deprecation and performance categories for the tools. They are not enabled while setup-ruby installs the
+# gems, where RubyGems' own installer is the only code that runs.
+
+# Never cancel a release in flight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Gate the release on the full verification suite so a broken tagged commit
+  # can never ship.
+  verify:
+    name: Verify
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    # No dependency cache in the release pipeline: a poisoned cache must never reach a published gem.
+    - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+      with:
+        ruby-version: .ruby-version
+        bundler-cache: false
+        rubygems: latest
+    - name: Check the Ruby version
+      run: script/check_ruby.sh
+    - run: bundle install --jobs 4 --retry 3
+    - run: bundle exec rake spec legacy_suite
+      env:
+        RUBYOPT: -w -W:deprecated -W:performance
+    - run: bundle exec rake rubocop suppressions typecheck yard reek flay audit
+      env:
+        RUBYOPT: -W:deprecated -W:performance
+
+  build_and_release:
+    name: Build and release
+    needs: verify
+    runs-on: ubuntu-26.04
+    # The signing key and the RubyGems publishing token are only handed to jobs of this environment.
+    environment: release
+    permissions:
+      contents: write # create the GitHub release and attach the gem
+      id-token: write # RubyGems trusted publishing (OIDC)
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+      with:
+        ruby-version: .ruby-version
+        bundler-cache: false
+        rubygems: latest
+    - name: Check the Ruby version
+      run: script/check_ruby.sh
+    - run: bundle install --jobs 4 --retry 3
+
+    # Validate the tag format and require it to match the committed version.rb.
+    # The version file is the single source of truth (the previous workflow rewrote it from the tag at
+    # release time, so the released code never matched the tagged commit); a mistyped tag fails loudly.
+    - name: Validate tag against version.rb
+      run: |
+        TAG_NAME="${GITHUB_REF_NAME}"
+        if ! printf '%s' "$TAG_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+          echo "::error::Tag '$TAG_NAME' does not match the required vX.Y.Z format." >&2
+          exit 1
+        fi
+        VERSION="${TAG_NAME#v}"
+        FILE_VERSION="$(ruby -r ./lib/leechtop_downloader/version -e 'puts LeechtopDownloader::VERSION')"
+        if [ "$VERSION" != "$FILE_VERSION" ]; then
+          echo "::error::Tag version '$VERSION' does not match lib/leechtop_downloader/version.rb ('$FILE_VERSION'). Update version.rb, commit, then re-tag." >&2
+          exit 1
+        fi
+        echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+    - name: Recover Private Key
+      env:
+        GEM_PRIVATE_KEY: ${{ secrets.GEM_PRIVATE_KEY }}
+      run: |
+        if [ -z "$GEM_PRIVATE_KEY" ]; then
+          echo "::error::GEM_PRIVATE_KEY secret is missing or empty; refusing to publish an unsigned gem." >&2
+          exit 1
+        fi
+        mkdir -p ~/.gem
+        printf '%s\n' "$GEM_PRIVATE_KEY" > ~/.gem/gem-private_key.pem
+        chmod 0600 ~/.gem/gem-private_key.pem
+
+    - run: gem build leechtop_downloader.gemspec
+      env:
+        RUBYOPT: -W:deprecated -W:performance
+
+    - name: Verify the built gem is signed
+      run: |
+        gem spec "leechtop_downloader-${VERSION}.gem" cert_chain | grep -q 'BEGIN CERTIFICATE' || {
+          echo "::error::Built gem is not signed." >&2
+          exit 1
+        }
+
+    - name: Create the GitHub release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release create "$GITHUB_REF_NAME" "leechtop_downloader-${VERSION}.gem" --title "$GITHUB_REF_NAME" --generate-notes
+
+    # Pinned to the v2.1.0 release SHA (credential-handling step; never track a
+    # mutable ref here).
+    - uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
+
+    - run: gem push "leechtop_downloader-${VERSION}.gem"

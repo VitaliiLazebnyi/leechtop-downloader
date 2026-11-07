@@ -1,0 +1,9 @@
+# gitleaks with its default rules, plus one allowlist.
+[extend]
+useDefault = true
+
+[[allowlists]]
+# Tapioca generates these RBIs from the source of third-party gems. Their copied documentation contains example
+# credentials (e.g. `uri.password = "..."` in the uri gem), never a secret of this repository.
+description = "RBIs generated from third-party gems"
+paths = ['''^sorbet/rbi/gems/''']
