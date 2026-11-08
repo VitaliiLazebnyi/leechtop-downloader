@@ -4,6 +4,10 @@
   "private": true,
   "description": "The Markdown linter of script/lint.sh, installed by script/install_tools.sh with npm ci.",
   "license": "MIT",
+  "overrides": {
+    "katex": "0.19.1",
+    "re2js": "2.8.8"
+  },
   "devDependencies": {
     "markdownlint-cli2": "0.24.0"
   }

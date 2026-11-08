@@ -3,6 +3,10 @@
 #   - from PyPI (tools/requirements.txt, every file verified against its hash): ShellCheck, shfmt, Taplo, typos,
 #     yamllint, zizmor;
 #   - from npm (tools/package-lock.json, verified against its integrity hashes): markdownlint-cli2;
+#     the "overrides" of tools/package.json lift two of its transitive packages past advisories that exact pins
+#     hold back: re2js 2.8.8 (GHSA-gg6h-894w-4m9c; markdownlint 0.42.0 pins 2.8.6) and katex 0.19.1
+#     (GHSA-238p-pmpm-9mq7; micromark-extension-math asks for ^0.16). Drop them once markdownlint-cli2 requires
+#     fixed versions;
 #   - from their GitHub releases (each archive verified against its published SHA-256 first): actionlint,
 #     editorconfig-checker and gitleaks.
 # Dependabot keeps tools/ current; the release versions below are kept current by hand.
